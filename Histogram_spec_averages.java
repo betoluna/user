@@ -1,7 +1,8 @@
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
-import ij.process.ImageProcessor;
-import ij.Opener;
+import ij.process.*;
+import ij.io.Opener;// if using ImagePlus openImage(java.lang.String path)
+import ij.WindowManager;
 import java.util.ArrayList;
 
 /**
@@ -10,24 +11,19 @@ import java.util.ArrayList;
  * Email: nlunacano@wpi.edu
  * Date: 3/4/16
  * Overview Description of Plugin:
- * 
- * can use public ImagePlus openImage(java.lang.String path) from Class Opener
- * 
+ * Using a histogram specification for adjusting an image to a
+ * computed average reference histogram from a set of images.
  */
 
 /**
- * Instructions: Use this plugin filter as a template for your plugin implementations.
- * Specifically for the run method, replace the description with your own deetailed 
- * description of the implementation of the algorithm you are implementing. 
- * You may include assumptions being made, the algorithms being used, any special 
- * variables referenced, etc.
- * 
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
- * modified and the implications of modifying the variable.
+ * list is an arrayList of histograms of opened images
+ * to be used as reference for the target image once the
+ * histograms are averaged. The assumption is that at leas
+ * two images are open.
  */
 public class Histogram_spec_averages implements PlugInFilter {
 	protected ImagePlus image;
+    ArrayList<int[]> list = new ArrayList<int[]>();
 
 	/**
      * This method gets called by ImageJ / Fiji to determine
@@ -45,22 +41,51 @@ public class Histogram_spec_averages implements PlugInFilter {
 	}
 
 	/**
-     * Description: [implementation specific description]
-     *
+     * Description: one or more image histograms are averaged and the computed
+     * averaged histogram is used as reference to do histogram matching.
      * @param ip is the current slice (typically, plugins use
      * the ImagePlus set above instead).
      * @see ij.plugin.filter.PlugInFilter#run(ij.process.ImageProcessor)
      */
 	@Override
 	public void run(ImageProcessor ip) {
-        Opener op = new Opener();
-        op.open();
-        ImagePlus im = IJ.getImage(); 
-        ImageProcessor ipA = im.getProcessor();
-        // the target image IA to be modified
-        //ImageProcessor ipA = "/Users/beto/Desktop/runaway.jpg";
-        // ImageProcessor ipR1 =
-        // ImageProcessor ipR2 =
+        /* alternative to work with several images using the Opener class */
+        // Opener op = new Opener();
+        // ImagePlus impl1 = op.openImage("/Users/beto/Google Drive/classes/DIP545/images/Baboon.jpg"); 
+        // ImagePlus impl2 = op.openImage("/Users/beto/Google Drive/classes/DIP545/images/Peppers.jpg"); 
+        // ImageProcessor ip1 = impl1.getProcessor();
+        // ImageProcessor ip2 = impl2.getProcessor();
+        
+        int[] windowList = WindowManager.getIDList(); 
+        ImagePlus im;
+
+        //if we have at least two images opened
+        if(windowList.length > 1) {
+            //make windowList[windowList.length - 1] (the last one opened) your target image 
+            //and average (add to list) only images from i = 0 to windowList.length - 2
+            for (int i = 0; i < windowList.length - 1; i++) {
+                im = WindowManager.getImage(windowList[i]);
+
+                //run ImageJ in debug mode: Edit->Options->Misc->Debug
+                System.out.println("i: " + i + " id: " + windowList[i] + " name: " + im.getTitle());
+
+                ip = im.getProcessor();
+                int[] hist = ip.getHistogram();
+                list.add(hist);
+                
+            }
+            
+            //now process the target image
+            im = WindowManager.getImage(windowList[windowList.length - 1]);
+            ip = im.getProcessor();
+
+            //in debug mode
+            System.out.println("Now processing: " + im.getTitle() + " ....");
+
+            int[] F = matchHistograms(ip.getHistogram(), list);
+            ip.applyTable(F);
+        }
+        
 	}
 
 	/**
@@ -89,7 +114,7 @@ public class Histogram_spec_averages implements PlugInFilter {
     }
 
 	/**
-     * assume all histogram array references in arrays
+     * assume all histogram array references in listOfHistograms
      * are of same length
      * @param listOfHistograms the ArrayList of
      * histograms from the set of images

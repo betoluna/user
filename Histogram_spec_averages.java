@@ -11,7 +11,7 @@ import java.util.ArrayList;
  * Date: 3/4/16
  * Overview Description of Plugin:
  * 
- * 
+ * can use public ImagePlus openImage(java.lang.String path) from Class Opener
  * 
  */
 

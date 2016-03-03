@@ -58,7 +58,7 @@ public class Gaussian_Blur implements PlugInFilter {
 	public void run(ImageProcessor ip) {
 		sigma = 1;
 
-		//doing actually unsharp masking
+		//actually unsharp masking code
 		w = -1;
 
 		ImageProcessor I = ip.convertToFloat(); // I
@@ -69,6 +69,9 @@ public class Gaussian_Blur implements PlugInFilter {
 		float[] H = makeGaussKernel1d(sigma);
 		Convolver cv = new Convolver();
 		cv.setNormalize(true);
+
+		//apply Gaussian filter in horizontal and vertical directions
+		//BUT WE CANNOT USE CONVOLVE IN THIS PROBLEM, WE HAVE TO IMPLEMENT CONVOLVE BY HANDLING THE BORDERS
 		cv.convolve(J, H, 1, H.length);
 		cv.convolve(J, H, H.length, 1);
 

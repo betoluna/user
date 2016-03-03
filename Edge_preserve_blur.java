@@ -28,9 +28,6 @@ public class Edge_preserve_blur implements PlugInFilter {
 	protected ImagePlus image;
 
 	/**
-	 * This method gets called by ImageJ / Fiji to determine
-	 * whether the current image is of an appropriate type.
-	 *
 	 * @param arg can be specified in plugins.config
 	 * @param image is the currently opened image
 	 * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
@@ -53,7 +50,7 @@ public class Edge_preserve_blur implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
-
+		//ip.findEdges();
 	}
 
 }

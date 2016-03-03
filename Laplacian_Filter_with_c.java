@@ -63,17 +63,13 @@ public class Laplacian_Filter_with_c implements PlugInFilter {
 		// 	0.125f, -0.5f, 0.125f,
 		// 	0, 0.125f, 0 };
 
-		float c = -0.5f;
-		float[] HC = {
-			0, c / 4, 0,
-			c / 4, 1 - c, c / 4,
-			0, c / 4, 0 };
+		//float c = -0.5f;
+	
 
 		Convolver cv = new Convolver();
-		cv.setNormalize(true);
+		cv.setNormalize(false);
 		cv.convolve(ip, H, 3, 3); //apply the laplacian filter H to image ip
-		// cv.convolve(ip, H, 3, 3);
-		cv.convolve(ip, HC, 3, 3);
+		
 
 
 		// int w = ip.getWidth();

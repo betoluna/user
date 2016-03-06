@@ -1,6 +1,5 @@
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
-//import ij.process.ImageProcessor;
 import ij.process.*;// include interface Blitter
 import ij.plugin.filter.Convolver;
 
@@ -10,21 +9,12 @@ import ij.plugin.filter.Convolver;
  * Email: nlunacano@wpi.edu
  * Date: 3/4/16
  * Overview Description of Plugin:
- * 
- * 
- * 
+ * This plugin makes use of the 1d Gaussian kernel
+ * defined by the function makeGaussianKernel1d.
  */
 
 /**
- * Instructions: Use this plugin filter as a template for your plugin implementations.
- * Specifically for the run method, replace the description with your own deetailed 
- * description of the implementation of the algorithm you are implementing. 
- * You may include assumptions being made, the algorithms being used, any special 
- * variables referenced, etc.
- * 
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
- * modified and the implications of modifying the variable.
+ * Objects of this class are used in Blur_Or_Sharpen plugin
  */
 public class Gaussian_Blur implements PlugInFilter {
 	protected ImagePlus image;
@@ -48,43 +38,47 @@ public class Gaussian_Blur implements PlugInFilter {
 	}
 
 	/**
-	 * Description: [implementation specific description]
-	 *
+	 * Description: Please note: ignore the run method. It is not being utilized
+	 * here since this plugin is being used only by the Blur_Or_Sharpen class
+	 * by the invocation of the makeGaussKernel1d function.
 	 * @param ip is the current slice (typically, plugins use
 	 * the ImagePlus set above instead).
 	 * @see ij.plugin.filter.PlugInFilter#run(ij.process.ImageProcessor)
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
-		sigma = 1;
+		// sigma = 1;
 
-		//actually unsharp masking code
-		w = -1;
+		// //actually unsharp masking code
+		// w = -1;
 
-		ImageProcessor I = ip.convertToFloat(); // I
+		// ImageProcessor I = ip.convertToFloat(); // I
 
-		// create a blurred version of the image
-		ImageProcessor J = I.duplicate(); // I^
+		// // create a blurred version of the image
+		// ImageProcessor J = I.duplicate(); // I^
 		
-		float[] H = makeGaussKernel1d(sigma);
-		Convolver cv = new Convolver();
-		cv.setNormalize(true);
+		// float[] H = makeGaussKernel1d(sigma);
+		// Convolver cv = new Convolver();
+		// cv.setNormalize(true);
 
-		//apply Gaussian filter in horizontal and vertical directions
-		//BUT WE CANNOT USE CONVOLVE IN THIS PROBLEM, WE HAVE TO IMPLEMENT CONVOLVE BY HANDLING THE BORDERS
-		cv.convolve(J, H, 1, H.length);
-		cv.convolve(J, H, H.length, 1);
+		// //apply Gaussian filter in horizontal and vertical directions
+		// cv.convolve(J, H, 1, H.length);
+		// cv.convolve(J, H, H.length, 1);
 
-		I.multiply(1 + w); // I <-  (1 + w) x I
-		J.multiply(w);     // I^ <- w x I^
-		I.copyBits(J, 0, 0, Blitter.SUBTRACT); // I^ <- (1 + w) x I - w x I^
+		// I.multiply(1 + w); // I <-  (1 + w) x I
+		// J.multiply(w);     // I^ <- w x I^
+		// I.copyBits(J, 0, 0, Blitter.SUBTRACT); // I^ <- (1 + w) x I - w x I^
 
-		//copy result back into original byte image
-		ip.insert(I.convertToByte(false), 0, 0);
+		// //copy result back into original byte image
+		// ip.insert(I.convertToByte(false), 0, 0);
 
 	}
 
-	float[] makeGaussKernel1d(double sigma) { 
+	/** one-dimensional Gaussian kernel
+	 * @param sigma the standart deviation
+	 * @return the Gaussian kernel
+	 */	
+	public float[] makeGaussKernel1d(double sigma) { 
 
 		// create the kernel
 		int center = (int) (3.0 * sigma);

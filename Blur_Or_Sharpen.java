@@ -21,9 +21,9 @@ import ij.gui.Roi;
  */
 public class Blur_Or_Sharpen implements PlugInFilter {
 	protected ImagePlus image;
-	private double sigma = 10; // standard deviation
+	private double sigma = 1; // standard deviation
 	int radius = (int)(3 * sigma);//the radius of the one-dimensional kernel
-	private double W = 1; // the parameter to blur or sharpen
+	private double W = -1; // the parameter to blur or sharpen
 
 	/**
 	 * @param arg can be specified in plugins.config

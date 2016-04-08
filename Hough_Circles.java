@@ -4,7 +4,7 @@ import ij.process.*;
 import java.util.*;
 import java.awt.*;
 
-import ij.gui.*;
+//import ij.gui.*;
 
 /**
  * This ImageJ plugin shows the Hough Transform Space and search for

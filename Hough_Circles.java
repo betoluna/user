@@ -1,7 +1,7 @@
 import ij.*;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.*;
-
+import java.util.*;
 import java.awt.*;
 
 import ij.gui.*;
@@ -14,6 +14,7 @@ import ij.gui.*;
  */
 public class Hough_Circles implements PlugInFilter {
     protected ImagePlus image;
+    ArrayList<Circle> circleList;
 
     public int radiusMin;  // Find circles with radius grater or equal radiusMin
     public int radiusMax;  // Find circles with radius less or equal radiusMax
@@ -44,6 +45,7 @@ public class Hough_Circles implements PlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
+        circleList = new ArrayList<Circle>();
         
         //preprocess the image (assume taking an rgb image from the website)
         ImageConverter converter = new ImageConverter(image);
@@ -56,7 +58,7 @@ public class Hough_Circles implements PlugInFilter {
 
         width = ip2.getWidth();
         height = ip2.getHeight();
-        //offset = ip2.getWidth();
+        System.out.println("width: " + width + ", height: " + height);
 
         if (readParameters()) { // Show a Dialog Window for user input of
             // radius and maxCircles.
@@ -75,6 +77,10 @@ public class Hough_Circles implements PlugInFilter {
             // Mark the center of the found circles in a new image
             getCenterPoints(maxCircles);
             drawCircles(circlespixels);
+
+            for (Circle circle : circleList) {
+                System.out.println(circle.getX() + " " + circle.getY() + " " + circle.getRadius());
+            }
 
             //new ImagePlus("Hough Space [r="+radiusMin+"]", newip).show(); // Shows only the hough space for the minimun radius
             new ImagePlus(maxCircles + " Circles Found", circlesip).show();
@@ -99,7 +105,7 @@ public class Hough_Circles implements PlugInFilter {
     private int buildLookUpTable() {
 
         int i = 0;
-        int incDen = Math.round(8F * radiusMin);  // increment denominator
+        int incDen = Math.round(10 * radiusMin);  // increment denominator
 
         lut = new int[2][incDen][depth];
 
@@ -124,6 +130,7 @@ public class Hough_Circles implements PlugInFilter {
     private void houghTransform(ImageProcessor iproc) {
 
         int lutSize = buildLookUpTable();
+        //System.out.println("lutSize: " + lutSize);
 
         houghValues = new double[width][height][depth];
 
@@ -167,42 +174,26 @@ public class Hough_Circles implements PlugInFilter {
                 //circlespixels[roiaddr] = imageValues[x];
                 // Saturate
                 if (circlespixels[roiaddr] != 0)
-                    circlespixels[roiaddr] = 100;
+                    circlespixels[roiaddr] = 127;//max positive value in two's complement for a byte
                 else
                     circlespixels[roiaddr] = 0;
                 roiaddr++;
             }
         }
-        // Copy original image to the circlespixels image.
-        // Changing pixels values to 100, so that the marked
-        // circles appears more clear. Must be improved in
-        // the future to show the resuls in a colored image.
-        //for(int i = 0; i < width*height ;++i ) {
-        //if(imageValues[i] != 0 )
-        //if(circlespixels[i] != 0 )
-        //circlespixels[i] = 100;
-        //else
-        //circlespixels[i] = 0;
-        //}
-        if (centerPoint == null) {
-            getCenterPoints(maxCircles);
-        }
-        byte cor = -1;
-        //int offset = width;
+        
         for (int l = 0; l < maxCircles; l++) {
-            int i = centerPoint[l].x;
-            int j = centerPoint[l].y;
+            int x = centerPoint[l].x;
+            int y = centerPoint[l].y;
             for (int k = -10; k <= 10; ++k) {// put a cross at center of relevant circle.
-                if (!outOfBounds(j + k, i))
-                    circlespixels[(j + k) * width + i] = cor;
-                if (!outOfBounds(j, i + k))
-                    circlespixels[j * width + i + k] = cor;
+                if (!outOfBounds(x, y + k))
+                    circlespixels[(y + k) * width + x] = -1;//all 1's in the byte
+                if (!outOfBounds(x + k, y))
+                    circlespixels[y * width + x + k] = -1;
             }
         }
     }
 
-
-    private boolean outOfBounds(int y, int x) {
+    private boolean outOfBounds(int x, int y) {
         if (x >= width)
             return (true);
         if (x <= 0)
@@ -229,8 +220,6 @@ public class Hough_Circles implements PlugInFilter {
         for (int c = 0; c < maxCircles; c++) {
             double counterMax = -1;
             for (int radius = radiusMin; radius <= radiusMax; radius = radius + radiusInc) {
-
-
                 int indexR = (radius - radiusMin) / radiusInc;
                 for (int y = 0; y < height; y++) {
                     for (int x = 0; x < width; x++) {
@@ -243,9 +232,11 @@ public class Hough_Circles implements PlugInFilter {
                     }
                 }
             }
+            System.out.println("x: " + xMax + ", y: " + yMax + ", rMax: " + rMax);
+            circleList.add(new Circle(xMax, yMax, rMax));
 
             centerPoint[c] = new Point(xMax, yMax);
-
+        
             clearNeighbours(xMax, yMax, rMax);
         }
     }
@@ -320,6 +311,27 @@ public class Hough_Circles implements PlugInFilter {
             }
         }
         return true;
+
+    }
+
+    class Circle {
+        private int x;
+        private int y;
+        private int radius;
+
+        public Circle(int x, int y, int radius) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+        }
+
+        public int getX() { return x; }
+        public int getY() { return y; }
+        public int getRadius() { return radius; }
+
+        public void setX(int x) { this.x = x; }
+        public void setY(int y) { this.y = y; }
+        public void setRadius(int r) { radius = r; }
 
     }
 

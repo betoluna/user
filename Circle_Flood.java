@@ -10,27 +10,30 @@ import ij.gui.*;
  * Email: nlunacano@wpi.edu
  * Date: April 13, 2016
  * Overview Description of Plugin:
- *
- *
- *
+ * 
+ * 
+ * 
  */
 
 /**
- * Burger and Burge Exercise 9.4 (page 171) (30 points): Implement as an ImageJ plugin,
- * called Circular_Hough, the Hough Transform for finding circles with varying radii.
- * Make use of a fast algorithm for generating circles, such as described in sec 9.4,
- * in the accumulator Array. Suitable images to test your algorithm will be posted on
- * the class site. Test at least one image with your submission. Also explain briefly how
- * your algorithm works in your comments in the code.
- *
+ * Using the Hough Transform from question 1, modify the code to perform 2 types 
+ * of flood fill algorithms to fill in each circle found in the image (25 points). 
+ * The result should be a binary image with the foreground contains only the filled-in 
+ * circles and the background is 0. The plugin should be named Circle_Flood and should 
+ * contain a Boolean variable which could be modified switch between the flood fill methods. 
+ * The first method should be the naive recursive flood fill algorithm (see Algorithm 11.1 in book). 
+ * The second method you should implement is the Coherence method described in class lec 07 p. 48.
+ * 
  * If you class makes use of any predefined variable members, please name them
  * appropriately and provide a short description comment on how it is used or
  * modified and the implications of modifying the variable.
+ * Note, for simplicity, not for design, most code is duplicated from Circular_Hough.java 
+ * as permitted in the problem specification. 
  */
-public class Circular_Hough implements PlugInFilter {
-    protected ImagePlus image;
+public class Circle_Flood implements PlugInFilter {
+	protected ImagePlus image;
 
-    public int width;
+	public int width;
     public int height;
     public int radiiSpan;
     int lookUpTable[][][];
@@ -39,27 +42,27 @@ public class Circular_Hough implements PlugInFilter {
     public int maxRad;
     public int step;
     public int numCircles;// num of circles to find
-    byte byteArrayImage[];
+    byte imageValues[];
     double ACCUMULATOR[][][];
 
-    /**
-     * This method gets called by ImageJ / Fiji to determine
-     * whether the current image is of an appropriate type.
-     *
-     * @param arg can be specified in plugins.config
-     * @param image is the currently opened image
-     * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
-     */
-    @Override
-    public int setup(String arg, ImagePlus image) {
-        this.image = image;
+	/**
+	 * This method gets called by ImageJ / Fiji to determine
+	 * whether the current image is of an appropriate type.
+	 *
+	 * @param arg can be specified in plugins.config
+	 * @param image is the currently opened image
+	 * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
+	 */
+	@Override
+	public int setup(String arg, ImagePlus image) {
+		this.image = image;
 		/*
 		 * take any image (including RGB images from the class website)
 		 */
-        return DOES_ALL;
-    }
+		return DOES_ALL;
+	}
 
-    // class for circle objects
+	// class for circle objects
     class Circle {
         private int x;//center x coordinate
         private int y;//center y coordinate
@@ -78,10 +81,9 @@ public class Circular_Hough implements PlugInFilter {
         public void setX(int x) { this.x = x; }
         public void setY(int y) { this.y = y; }
         public void setRadius(int r) { radius = r; }
-
     }
 
-    /**
+	/**
      * Description: [implementation specific description]
      *
      * @param ip is the current slice (typically, plugins use
@@ -304,5 +306,3 @@ public class Circular_Hough implements PlugInFilter {
         return true;
     }
 }
-
-

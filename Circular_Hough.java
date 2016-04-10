@@ -209,12 +209,6 @@ public class Circular_Hough implements PlugInFilter {
                 int x = circle.getX();
                 int y = circle.getY();
                 int r = circle.getRadius();
-                for (int k = -10; k <= 10; ++k) {// put a cross at center of relevant circle.
-                    if (x < width && x >= 0 && (y + k) < height && (y + k) >= 0)
-                        edges[(y + k) * width + x] = -1;//all 1's in the byte
-                    if (x < width && x >= 0 && (y + k) < height && (y + k) >= 0)
-                        edges[y * width + x + k] = -1;
-                }
 
                 //plotCircle(x, y, r, edgeImProc);
                 plotCircle(x, y, r, ip);//plot circles on original 8-bit image

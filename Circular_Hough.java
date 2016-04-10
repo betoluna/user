@@ -180,7 +180,7 @@ public class Circular_Hough implements PlugInFilter {
                 //System.out.println("x: " + maxX + ", y: " + maxY + ", rMax: " + maxR);
                 circleList.add(new Circle(maxX, maxY, maxR));
 
-                // clean the accumulator space from unuseful values
+                //remove not needed neighbor values from the accumulator space 
                 double rOver2 = maxR / 2.0;
                 int y1 = (int) Math.floor((double) maxY - rOver2);
                 int y2 = (int) Math.ceil((double) maxY + rOver2) + 1;

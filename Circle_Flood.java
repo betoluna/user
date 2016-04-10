@@ -33,6 +33,8 @@ import ij.gui.*;
 public class Circle_Flood implements PlugInFilter {
 	protected ImagePlus image;
 
+    Stack<Coordinate> stack;
+
 	public int width;
     public int height;
     public int radiiSpan;
@@ -83,6 +85,26 @@ public class Circle_Flood implements PlugInFilter {
         public void setRadius(int r) { radius = r; }
     }
 
+    /**
+     * class to represent the rightmost
+     * coordinate for the coherence method
+     */
+    static class Coordinate {
+        private int x;
+        private int y;
+        private int leftX;
+
+        public Coordinate(int x, int y, int leftX) {
+            this.x = x;
+            this.y = y;
+            this.leftX = leftX;
+        }
+
+        public int getX() { return x; }
+        public int getY() { return y; }
+        public int getleftX() { return leftX; }
+    }
+
 	/**
      * Description: [implementation specific description]
      *
@@ -93,6 +115,7 @@ public class Circle_Flood implements PlugInFilter {
     @Override
     public void run(ImageProcessor ip) {
         circleList = new ArrayList<Circle>();
+        stack = new Stack<Coordinate>();
 
         ImagePlus imageCopy = image.duplicate();
 
@@ -148,7 +171,7 @@ public class Circle_Flood implements PlugInFilter {
                                 int a = x + lookUpTable[1][i][radiusIndex];
                                 int b = y + lookUpTable[0][i][radiusIndex];
                                 if ((b >= 0) && (b < height) && (a >= 0) && (a < width)) {
-                                    ACCUMULATOR[a][b][radiusIndex] += 1;//increase accumulator
+                                    ACCUMULATOR[a][b][radiusIndex] += 1;//increase accumulator 
                                 }
                             }
                         }
@@ -181,7 +204,7 @@ public class Circle_Flood implements PlugInFilter {
                
                 circleList.add(new Circle(maxX, maxY, maxR));
 
-                // clean the accumulator space from unuseful values
+                //remove not needed neighbor values from the accumulator space 
                 double rOver2 = maxR / 2.0;
                 int y1 = (int) Math.floor((double) maxY - rOver2);
                 int y2 = (int) Math.ceil((double) maxY + rOver2) + 1;
@@ -233,7 +256,9 @@ public class Circle_Flood implements PlugInFilter {
                 int r = circle.getRadius();
 
                 plotCircle(x, y, r, edgeImProc);//plot white circles on processed 8-bit image
+                fillCircle_Coherence(x, y, r, edgeImProc);
             }
+
             // End draw circles *********************************
 
             new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
@@ -274,6 +299,64 @@ public class Circle_Flood implements PlugInFilter {
 				X--;
 				radiusError = radiusError + xChange;
 				xChange = xChange + 2;
+			}
+		}
+	}
+
+	/**
+	* Fill circle by coherence method. x and y are the center coordinates, 
+	* r the radius
+	*/
+	public void fillCircle_Coherence(int x, int y, int r, ImageProcessor proc) {
+		int radius = r;
+		int rightX = x + r;//rightmost x coordinate
+		int rightY = y;	   //rightmost y coordinate	
+		int leftX = x - r;
+		int  yPointerAbove = y;
+		int  yPointerBelow = y;
+
+		int X = r;
+		//int Y = 0;
+		int xChange = 1 - 2*r;
+		int yChange = 1;
+		int radiusError = 0;
+	
+		stack.push(new Coordinate(rightX, rightY, leftX));
+		while (!stack.empty()) {
+			//Pop stack to provide next seed, fill in run defined by seed
+			Coordinate c = stack.pop();	
+			int v = c.getY();
+			leftX = c.getleftX();
+			for (int u = c.getX(); u > leftX; u--) {
+				proc.set(u, v, 255);
+			}
+
+			radiusError = radiusError + yChange;
+			yChange = yChange + 2;
+
+			if (2 * radiusError + xChange > 0) {
+				X--;
+				radiusError = radiusError + xChange;
+				xChange = xChange + 2;
+			}
+
+			radius = X;
+		
+			rightX = x + radius;
+			leftX = x - radius;
+
+			//In row above find reachable runs
+			yPointerAbove++;
+			rightY = yPointerAbove;
+			if (rightY <= y + r) {
+				stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
+			}
+
+			//In row below find reachable runs
+			yPointerBelow--;
+			rightY = yPointerBelow;
+			if (rightY >= y - r) {	
+				stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
 			}
 		}
 	}

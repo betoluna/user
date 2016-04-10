@@ -42,7 +42,7 @@ public class Circle_Flood implements PlugInFilter {
     public int maxRad;
     public int step;
     public int numCircles;// num of circles to find
-    byte imageValues[];
+    byte byteArrayImage[];
     double ACCUMULATOR[][][];
 
 	/**
@@ -134,7 +134,6 @@ public class Circle_Flood implements PlugInFilter {
                     }
                 }
             }
-            //System.out.println("table length: " + tableLen);
             //end look up table **********************************
 
             //create and fill Hough Accumulator **************************
@@ -179,17 +178,15 @@ public class Circle_Flood implements PlugInFilter {
                         }
                     }
                 }
-                //System.out.println("x: " + maxX + ", y: " + maxY + ", rMax: " + maxR);
+               
                 circleList.add(new Circle(maxX, maxY, maxR));
 
-                // clean the accumulator from unuseful values ***********
-                double halfRadius = maxR / 2.0;
-                double halfSquared = halfRadius * halfRadius;
-
-                int y1 = (int) Math.floor((double) maxY - halfRadius);
-                int y2 = (int) Math.ceil((double) maxY + halfRadius) + 1;
-                int x1 = (int) Math.floor((double) maxX - halfRadius);
-                int x2 = (int) Math.ceil((double) maxX + halfRadius) + 1;
+                // clean the accumulator space from unuseful values
+                double rOver2 = maxR / 2.0;
+                int y1 = (int) Math.floor((double) maxY - rOver2);
+                int y2 = (int) Math.ceil((double) maxY + rOver2) + 1;
+                int x1 = (int) Math.floor((double) maxX - rOver2);
+                int x2 = (int) Math.ceil((double) maxX + rOver2) + 1;
 
                 if (y1 < 0)
                     y1 = 0;
@@ -200,11 +197,12 @@ public class Circle_Flood implements PlugInFilter {
                 if (x2 > width)
                     x2 = width;
 
+                double rOver2Squared = rOver2 * rOver2;
                 for (int r = minRad; r <= maxRad; r = r + step) {
                     int radiusIndex = (r - minRad) / step;
                     for (int ii = y1; ii < y2; ii++) {
                         for (int j = x1; j < x2; j++) {
-                            if (Math.pow(j - maxX, 2.0) + Math.pow(ii - maxY, 2.0) < halfSquared) {
+                            if (Math.pow(j - maxX, 2.0) + Math.pow(ii - maxY, 2.0) < rOver2Squared) {
                                 ACCUMULATOR[j][ii][radiusIndex] = 0.0;
                             }
                         }
@@ -234,16 +232,12 @@ public class Circle_Flood implements PlugInFilter {
                 int y = circle.getY();
                 int r = circle.getRadius();
 
-                //plotCircle(x, y, r, edgeImProc);
-                plotCircle(x, y, r, ip);//plot white circles on original 8-bit image
-
+                plotCircle(x, y, r, edgeImProc);//plot white circles on processed 8-bit image
             }
             // End draw circles *********************************
 
-            //new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
-            new ImagePlus(numCircles + " Circles Found", ip).show();
-
-
+            new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
+            //new ImagePlus(numCircles + " Circles Found", ip).show();
         }//end readparameters
     }//end run
    

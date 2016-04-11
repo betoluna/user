@@ -10,7 +10,7 @@ import ij.gui.*;
  * Email: nlunacano@wpi.edu
  * Date: April 13, 2016
  * Overview Description of Plugin:
- * 
+ * After experiments, for eyes1 pupil radius is  and 10
  * 
  * 
  */
@@ -38,15 +38,15 @@ public class Circle_Flood implements PlugInFilter {
 	public int width;
     public int height;
     public int radiiSpan;
+    byte byteArrayImage[];
+    double ACCUMULATOR[][][];
     int lookUpTable[][][];
     ArrayList<Circle> circleList;
     public int minRad;
     public int maxRad;
     public int step;
     public int numCircles;// num of circles to find
-    byte byteArrayImage[];
-    double ACCUMULATOR[][][];
-
+    
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
 	 * whether the current image is of an appropriate type.
@@ -123,6 +123,7 @@ public class Circle_Flood implements PlugInFilter {
         ImageConverter orig = new ImageConverter(image);
         orig.convertToGray8();//convert to 8-bit grayscale
         ImageProcessor ip2 = image.getProcessor();
+        ip2.smooth();
         ip2.findEdges();
         ip2.threshold(127);
 
@@ -256,7 +257,7 @@ public class Circle_Flood implements PlugInFilter {
                 int r = circle.getRadius();
 
                 plotCircle(x, y, r, edgeImProc);//plot white circles on processed 8-bit image
-                fillCircle_Coherence(x, y, r, edgeImProc);
+                //fillCircle_Coherence(x, y, r, edgeImProc);
             }
 
             // End draw circles *********************************
@@ -282,14 +283,41 @@ public class Circle_Flood implements PlugInFilter {
 		int radiusError = 0;
 
 		while (X >= Y) {
-			proc.set(CX + X, CY + Y, 255);//use faster set() instead of putPixel()
-			proc.set(CX - X, CY + Y, 255);
-			proc.set(CX - X, CY - Y, 255);
-			proc.set(CX + X, CY - Y, 255);
-			proc.set(CX + Y, CY + X, 255);
-			proc.set(CX - Y, CY + X, 255);
-			proc.set(CX - Y, CY - X, 255);
-			proc.set(CX + Y, CY - X, 255);
+			// proc.set(CX + X, CY + Y, 255);//use faster set() instead of putPixel()
+			// proc.set(CX - X, CY + Y, 255);
+			// proc.set(CX - X, CY - Y, 255);
+			// proc.set(CX + X, CY - Y, 255);
+			// proc.set(CX + Y, CY + X, 255);
+			// proc.set(CX - Y, CY + X, 255);
+			// proc.set(CX - Y, CY - X, 255);
+			// proc.set(CX + Y, CY - X, 255);
+
+            // if time permits, use these variables updates in fillCircle_Coherence
+            int v;
+            proc.set(CX + X, CY + Y, 255);//use faster set() instead of putPixel()
+            proc.set(CX - X, CY + Y, 255);
+            v = CY + Y;
+            for (int u = CX + X; u >= CX - X; u--) {
+                proc.set(u, v, 255);
+            }
+            proc.set(CX - X, CY - Y, 255);
+            proc.set(CX + X, CY - Y, 255);
+            v = CY - Y;
+            for (int u = CX + X; u >= CX - X; u--) {
+                proc.set(u, v, 255);
+            }
+            proc.set(CX + Y, CY + X, 255);
+            proc.set(CX - Y, CY + X, 255);
+            v = CY + X;
+            for (int u = CX + Y; u >= CX - Y; u--) {
+                proc.set(u, v, 255);
+            }
+            proc.set(CX - Y, CY - X, 255);
+            proc.set(CX + Y, CY - X, 255);
+            v = CY - X;
+            for (int u = CX + Y; u >= CX - Y; u--) {
+                proc.set(u, v, 255);
+            }
 
 			Y++;
 			radiusError = radiusError + yChange;

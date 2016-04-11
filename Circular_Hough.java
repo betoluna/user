@@ -10,8 +10,8 @@ import ij.gui.*;
  * Email: nlunacano@wpi.edu
  * Date: April 13, 2016
  * Overview Description of Plugin:
- *
- *
+ * For coins.png set radius bet 25 - 30
+ * For eyes1 it finds right pupil with radius bet 7  - 8, left pupil bet 3 - 5 but separate runs and only 1 circle
  *
  */
 
@@ -33,15 +33,15 @@ public class Circular_Hough implements PlugInFilter {
     public int width;
     public int height;
     public int radiiSpan;
+    byte byteArrayImage[];
+    double ACCUMULATOR[][][];
     int lookUpTable[][][];
     ArrayList<Circle> circleList;
     public int minRad;
     public int maxRad;
     public int step;
     public int numCircles;// num of circles to find
-    byte byteArrayImage[];
-    double ACCUMULATOR[][][];
-
+    
     /**
      * This method gets called by ImageJ / Fiji to determine
      * whether the current image is of an appropriate type.
@@ -98,6 +98,7 @@ public class Circular_Hough implements PlugInFilter {
         ImageConverter orig = new ImageConverter(image);
         orig.convertToGray8();//convert to 8-bit grayscale
         ImageProcessor ip2 = image.getProcessor();
+        ip2.smooth();
         ip2.findEdges();
         ip2.threshold(127);
 

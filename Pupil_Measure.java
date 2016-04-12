@@ -1,6 +1,7 @@
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
+import ij.io.Opener;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
@@ -42,20 +43,9 @@ public class Pupil_Measure implements PlugInFilter {
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
 		/*
-		 * The current return value accepts all gray-scale
-		 * images (if you access the pixels with ip.getf(x, y)
-		 * anyway, that works quite well.
-		 *
-		 * It could also be DOES_ALL; you can add "| NO_CHANGES"
-		 * to indicate that the current image will not be
-		 * changed by this plugin.
-		 *
-		 * Beware of DOES_STACKS: this will call the run()
-		 * method with all slices of the current image
-		 * (channels, z-slices and frames, all). Most likely
-		 * not what you want.
+		 * take any image (including RGB images from the class website)
 		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_ALL;
 	}
 
 	/**
@@ -67,5 +57,18 @@ public class Pupil_Measure implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		Opener opener = new Opener();
+		Circular_Hough hough = new Circular_Hough();
+
+		ImagePlus iplus;
+		for (int i = 3; i <= 9; i++) {
+			for (int j = i - 2; j < i; j++) {
+				iplus = opener.openImage("/Users/beto/Downloads/spine.jpg");
+				ip = iplus.getProcessor();
+				ip.threshold(127);
+				new ImagePlus("j: " + j + ", i: " + i, ip).show();
+			}
+		}
 	}
 }
+

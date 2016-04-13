@@ -110,7 +110,7 @@ public class Circular_Hough implements PlugInFilter {
         width = ip2.getWidth();
         height = ip2.getHeight();
         //System.out.println("width: " + width + ", height: " + height);
-        byteArrayImage = (byte[]) ip2.getPixels();
+        byteArrayImage = (byte[]) ip2.getPixels();//array of image pixels
 
         if (readParameters()) {
 

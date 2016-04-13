@@ -50,8 +50,12 @@ public class Gradient_Magnitude implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
-		ImageProcessor I = ip.convertToFloat();
-		ImageProcessor J = I.duplicate();
+		// ImageProcessor I = ip.convertToFloat();
+		// ImageProcessor J = I.duplicate();
+
+		ImageProcessor I = ip.duplicate();
+		ImageProcessor J = ip.duplicate();
+		ImageProcessor ipCopy = ip.duplicate();
  
 		float HSx[] = {-1, 0, 1,
 					   -2, 0, 2,
@@ -60,6 +64,29 @@ public class Gradient_Magnitude implements PlugInFilter {
 		float HSy[] = {-1, -2, -1,
 					    0, 0, 0,
 					    1, 2, 1};
+
+		Convolver cv = new Convolver();
+		cv.convolve(I, HSx, 3, 3);
+		cv.convolve(J, HSy, 3, 3);
+
+		int w = ip.getWidth();
+		int h = ip.getHeight();
+	
+        for (int v = 0; v < h; v++) {
+         	for (int u = 0; u < w; u++) {
+         		double DxSqred = I.getPixel(u, v) * I.getPixel(u, v);
+         		double DySqred = J.getPixel(u, v) * J.getPixel(u, v);
+         		int Euv = (int) Math.sqrt(DxSqred + DySqred);
+         		if (Euv > 255) {
+         			System.out.println("out of bounds: " + Euv + ", clamping Euv to 255");
+         			Euv = 255;
+         		}
+	
+         		ipCopy.set(u, v, Euv);
+            }
+        }
+
+		new ImagePlus("this is ipCopy", ipCopy).show();
 
 	}
 }

@@ -134,12 +134,11 @@ public class Circle_Flood implements PlugInFilter {
 
         width = ip2.getWidth();
         height = ip2.getHeight();
-        //System.out.println("width: " + width + ", height: " + height);
         byteArrayImage = (byte[]) ip2.getPixels();//array of image pixels
 
         if (readParameters()) {
 
-            //create a look up table ******************************
+            //create a look up table 
             //increment theta each time by some proportion of 360 degrees
             int thetaIncrement = Math.round(minRad * 45);
             lookUpTable = new int[2][thetaIncrement][radiiSpan];
@@ -158,9 +157,8 @@ public class Circle_Flood implements PlugInFilter {
                     }
                 }
             }
-            //end look up table **********************************
 
-            //create and fill Hough Accumulator **************************
+            //create and fill Hough Accumulator 
             ACCUMULATOR = new double[width][height][radiiSpan];
             for (int y = 1; y < height - 1; y++) {
                 for (int x = 1; x < width - 1; x++) {
@@ -172,21 +170,19 @@ public class Circle_Flood implements PlugInFilter {
                                 int a = x + lookUpTable[1][i][radiusIndex];
                                 int b = y + lookUpTable[0][i][radiusIndex];
                                 if ((b >= 0) && (b < height) && (a >= 0) && (a < width)) {
-                                    ACCUMULATOR[a][b][radiusIndex] += 1;//increase accumulator 
+                                    ACCUMULATOR[a][b][radiusIndex] += 1;//increase accumulator at this index
                                 }
                             }
                         }
                     }
                 }
             }
-            //end accumulator creation *****************************
 
             ImageProcessor edgeImProc = new ByteProcessor(width, height);
             byte[] edges = (byte[]) edgeImProc.getPixels();
 
-            // getCenterPoints ***********************************
+            // compute circle origin coordiantes and radius
             int maxX = 0, maxY = 0, maxR = 0;
-
             for (int i = 0; i < numCircles; i++) {
                 double counterMax = -1;
                 for (int r = minRad; r <= maxRad; r = r + step) {
@@ -205,21 +201,18 @@ public class Circle_Flood implements PlugInFilter {
                
                 circleList.add(new Circle(maxX, maxY, maxR));
 
-                //remove not needed neighbor values from the accumulator space 
+                //remove not needed neighbor values (other maxima) from the accumulator space
+                //from center maxima to a distance of approx maximum radius divided by 2  
                 double rOver2 = maxR / 2.0;
-                int y1 = (int) Math.floor((double) maxY - rOver2);
-                int y2 = (int) Math.ceil((double) maxY + rOver2) + 1;
-                int x1 = (int) Math.floor((double) maxX - rOver2);
-                int x2 = (int) Math.ceil((double) maxX + rOver2) + 1;
-
-                if (y1 < 0)
-                    y1 = 0;
-                if (y2 > height)
-                    y2 = height;
-                if (x1 < 0)
+                int x1, x2, y1, y2;            
+                if ((x1 = (int) Math.floor((double) maxX - rOver2)) < 0)
                     x1 = 0;
-                if (x2 > width)
+                if ((x2 = (int) Math.ceil((double) maxX + rOver2) + 1) > width)
                     x2 = width;
+                if ((y1 = (int) Math.floor((double) maxY - rOver2)) < 0)
+                    y1 = 0;
+                if ((y2 = (int) Math.ceil((double) maxY + rOver2) + 1) > height)
+                    y2 = height;
 
                 double rOver2Squared = rOver2 * rOver2;
                 for (int r = minRad; r <= maxRad; r = r + step) {
@@ -227,17 +220,14 @@ public class Circle_Flood implements PlugInFilter {
                     for (int ii = y1; ii < y2; ii++) {
                         for (int j = x1; j < x2; j++) {
                             if (Math.pow(j - maxX, 2.0) + Math.pow(ii - maxY, 2.0) < rOver2Squared) {
-                                ACCUMULATOR[j][ii][radiusIndex] = 0.0;
+                                ACCUMULATOR[j][ii][radiusIndex] = 0.0;//replace value with zero
                             }
                         }
                     }
                 }
-
-                // end clean accumulator ******************************
             }
-            // End getCenterPoints *******************************
 
-            // draw edges in image with intensity value 127 *********************************
+            // draw edges in image with intensity value 127 
             int edgePos = 0;
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
@@ -260,11 +250,9 @@ public class Circle_Flood implements PlugInFilter {
                 //fillCircle_Coherence(x, y, r, edgeImProc);
             }
 
-            // End draw circles *********************************
-
             new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
             //new ImagePlus(numCircles + " Circles Found", ip).show();
-        }//end readparameters
+        }
     }//end run
    
    	/**

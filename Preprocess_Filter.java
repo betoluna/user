@@ -23,9 +23,9 @@ public class Preprocess_Filter implements PlugInFilter {
         ImageConverter orig = new ImageConverter(image);
         orig.convertToGray8();//convert to 8-bit grayscale
         ImageProcessor ip2 = image.getProcessor();
-        ip2.smooth();
-        ip2.findEdges();
-        ip2.threshold(127);
+        // ip2.smooth();
+        // ip2.findEdges();
+        // ip2.threshold(127);
 
 	}
 }

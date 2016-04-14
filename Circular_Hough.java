@@ -175,7 +175,7 @@ public class Circular_Hough implements PlugInFilter {
                 }
                 circleList.add(new Circle(maxX, maxY, maxR));// add this circle
 
-                //remove not needed neighbor values (other maxima) from the accumulator space
+                //remove unwanted neighbor values (less than maxima) from the accumulator space
                 //from center maxima to a distance of approx maximum radius divided by 2  
                 double rOver2 = maxR / 2.0;
                 int x1, x2, y1, y2;            

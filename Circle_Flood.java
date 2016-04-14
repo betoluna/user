@@ -201,7 +201,7 @@ public class Circle_Flood implements PlugInFilter {
                
                 circleList.add(new Circle(maxX, maxY, maxR));
 
-                //remove not needed neighbor values (other maxima) from the accumulator space
+                //remove unwanted neighbor values (less than maxima) from the accumulator space
                 //from center maxima to a distance of approx maximum radius divided by 2  
                 double rOver2 = maxR / 2.0;
                 int x1, x2, y1, y2;            
@@ -323,59 +323,59 @@ public class Circle_Flood implements PlugInFilter {
 	* Fill circle by coherence method. x and y are the center coordinates, 
 	* r the radius
 	*/
-	public void fillCircle_Coherence(int x, int y, int r, ImageProcessor proc) {
-		int radius = r;
-		int rightX = x + r;//rightmost x coordinate
-		int rightY = y;	   //rightmost y coordinate	
-		int leftX = x - r;
-		int  yPointerAbove = y;
-		int  yPointerBelow = y;
+	public void fillCircle_Coherence(int CX, int CY, int R, ImageProcessor proc) {
+        int radius = R;
+        int rightX = CX + R;//rightmost x coordinate
+        int rightY = CY;       //rightmost y coordinate
+        int leftX = CX - R;
+        int  yPointerAbove = CY;
+        int  yPointerBelow = CY;
 
-		int X = r;
-		//int Y = 0;
-		int xChange = 1 - 2*r;
-		int yChange = 1;
-		int radiusError = 0;
-	
-		stack.push(new Coordinate(rightX, rightY, leftX));
-		while (!stack.empty()) {
-			//Pop stack to provide next seed, fill in run defined by seed
-			Coordinate c = stack.pop();	
-			int v = c.getY();
-			leftX = c.getleftX();
-			for (int u = c.getX(); u > leftX; u--) {
-				proc.set(u, v, 255);
-			}
+        int X = R;
+        //int Y = 0;
+        int xChange = 1 - 2*R;
+        int yChange = 1;
+        int radiusError = 0;
 
-			radiusError = radiusError + yChange;
-			yChange = yChange + 2;
+        stack.push(new Coordinate(rightX, rightY, leftX));
+        while (!stack.empty()) {
+            //Pop stack to provide next seed, fill in run defined by seed
+            Coordinate c = stack.pop();
+            int v = c.getY();
+            leftX = c.getleftX();
+            for (int u = c.getX(); u > leftX; u--) {
+                proc.set(u, v, 255);
+            }
 
-			if (2 * radiusError + xChange > 0) {
-				X--;
-				radiusError = radiusError + xChange;
-				xChange = xChange + 2;
-			}
+            radiusError = radiusError + yChange;
+            yChange = yChange + 2;
 
-			radius = X;
-		
-			rightX = x + radius;
-			leftX = x - radius;
+            if (2 * radiusError + xChange > 0) {
+                X--;
+                radiusError = radiusError + xChange;
+                xChange = xChange + 2;
+            }
 
-			//In row above find reachable runs
-			yPointerAbove++;
-			rightY = yPointerAbove;
-			if (rightY <= y + r) {
-				stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
-			}
+            radius = X;
 
-			//In row below find reachable runs
-			yPointerBelow--;
-			rightY = yPointerBelow;
-			if (rightY >= y - r) {	
-				stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
-			}
-		}
-	}
+            rightX = CX + radius;
+            leftX = CX - radius;
+
+            //In row above find reachable runs
+            yPointerAbove++;
+            rightY = yPointerAbove;
+            if (rightY <= CY + R) {
+                stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
+            }
+
+            //In row below find reachable runs
+            yPointerBelow--;
+            rightY = yPointerBelow;
+            if (rightY >= CY - R) {
+                stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
+            }
+        }
+    }
 
     boolean readParameters() {
         GenericDialog gd = new GenericDialog("Hough Parameters", IJ.getInstance());

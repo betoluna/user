@@ -49,7 +49,11 @@ public class Gradient_Magnitude implements PlugInFilter {
 	 * Separable convolution routine.
 	 * Convolve the image with one separable Sobel filter at a time
 	 */
-	public void convolve(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isDirectionY) {
+	public void convolve(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isYDirection) {
+
+		// if u = 0 or u = width - 1 or v = 0 or v = height - 1
+		int x = 0; int y = 0;
+		while (y < w)  
 		
 		for (int v = 1; v <= h-2; v++) {
 			for (int u = 1; u <= w-2; u++) {
@@ -59,10 +63,10 @@ public class Gradient_Magnitude implements PlugInFilter {
 				//for each value in 3x3 filter H...
 				for (int i = -1; i <= 1; i++) {
 					int temp;
-					if (isDirectionY) {
-						temp = orig.getPixel(u, v+i);//x coord stays constant
+					if (isYDirection) {
+						temp = orig.getPixel(u, v+i);//x coord stays constant, y moves
 					} else {
-						temp = orig.getPixel(u+i, v);//y coord stays constant
+						temp = orig.getPixel(u+i, v);//y coord stays constant, x moves
 					}
 
 					sum = sum + temp * H[idx++];
@@ -101,7 +105,7 @@ public class Gradient_Magnitude implements PlugInFilter {
 		float Hzero[] = {-1f, 0f, 1f};
 		float Hone[]  = {1f, 2f, 1f};
 
-		//convolve the image
+		//convolve the image using the separable convolution routine
 		convolve(ipCopy, I, Hone, true);
 		convolve(ipCopy, I, Hzero, false);
 		convolve(ipCopy, J, Hone, false);

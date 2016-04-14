@@ -39,7 +39,7 @@ public class Gradient_Magnitude implements PlugInFilter {
 		/*
 		 * DOES_32 handles float images
  		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_ALL;
 	}
 
 	/* 
@@ -68,9 +68,10 @@ public class Gradient_Magnitude implements PlugInFilter {
 					sum = sum + temp * H[idx++];
 				}
 				int p = (int) Math.round(sum);
+				//System.out.println("in GM p: " + p);
 				if (p < 0) p = 0;
 				if (p > 255) p = 255;
-				//System.out.println("in GM p: " + p);
+				
 				ipDest.set(u, v, p);
 			}
 		}

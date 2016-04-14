@@ -1,6 +1,9 @@
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
+import ij.plugin.filter.Convolver;
+import ij.process.ImageConverter;
+import java.util.*;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
@@ -8,9 +11,8 @@ import ij.process.ImageProcessor;
  * Email: nlunacano@wpi.edu
  * Date: 4/13/16
  * Overview Description of Plugin:
- * 
- * 
- * 
+ * calculates the zero crossings in an image. It
+ * This class sets a pixel to 255 if it is a zero crossing and 0 otherwise.
  */
 
 /**
@@ -27,6 +29,8 @@ import ij.process.ImageProcessor;
 public class Zero_Crossings implements PlugInFilter {
 	protected ImagePlus image;
 
+	private int prev, next;
+
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
 	 * whether the current image is of an appropriate type.
@@ -39,9 +43,9 @@ public class Zero_Crossings implements PlugInFilter {
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
 		/*
-		 * 
+		 * handles all types of images
  		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_ALL;
 	}
 
 	/**
@@ -53,5 +57,78 @@ public class Zero_Crossings implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		//handle floating point image and convert it to 8-bit grayscale
+		ImageConverter orig = new ImageConverter(image);
+		orig.convertToGray8();
+        ip = image.getProcessor();
+		
+		ImageProcessor I = ip.duplicate();
+		ImageProcessor ipCopy = ip.duplicate();
+
+		// float[] Hlaplace = { 0, 1, 0,
+		// 					 1, -4, 1,
+		// 					 0, 1, 0 };
+
+		// Convolver cv = new Convolver();
+		// cv.convolve(ipCopy, Hlaplace, 3, 3);
+
+		float Hlaplace[] = {1f, -2f, 1f};
+
+		int w = ip.getWidth();
+		int h = ip.getHeight();
+
+		convolve(ipCopy, I, Hlaplace, false, w, h);
+		convolve(ipCopy, I, Hlaplace, true, w, h);
+
+		new ImagePlus("ipCopy", I).show();
 	}
+
+	/* 
+	 * Separable convolution routine.
+	 */
+	public void convolve(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isYDirection, int w, int h) {
+		ArrayList<Integer> neighbors = new ArrayList<Integer>();
+
+		
+		for (int v = 1; v <= h-2; v++) {
+			for (int u = 1; u <= w-2; u++) {
+				double sum = 0;
+				int idx = 0;
+
+				//for each value in 3x3 filter H...
+				for (int i = -1; i <= 1; i++) {
+					int temp;
+					if (isYDirection) {
+						temp = orig.getPixel(u, v+i);//x coord stays constant, y moves
+					} else {
+						temp = orig.getPixel(u+i, v);//y coord stays constant, x moves
+					}
+
+					sum = sum + temp * H[idx++];
+				}
+				int p = (int) Math.round(sum);
+				System.out.println("p: " + p);
+
+				if (!sameSign(prev, p)) {
+					neighbors.add(p);
+					next = p;
+				}
+
+				if (p == 0) {
+					continue;
+				}
+
+				// 	p = 0;
+				// }
+				// if (p > 255) p = 255;
+				
+				ipDest.set(u, v, p);
+			}
+		}
+	}
+
+	public static boolean sameSign(int x, int y) {
+        return (x >= 0) ^ (y < 0);//consider zero non-negative
+    }
 }
+

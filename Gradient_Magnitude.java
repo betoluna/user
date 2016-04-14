@@ -25,9 +25,6 @@ import ij.process.ImageConverter;
 public class Gradient_Magnitude implements PlugInFilter {
 	protected ImagePlus image;
 
-	private int w;
-	private int h;
-
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
 	 * whether the current image is of an appropriate type.
@@ -47,13 +44,12 @@ public class Gradient_Magnitude implements PlugInFilter {
 
 	/* 
 	 * Separable convolution routine.
-	 * Convolve the image with one separable Sobel filter at a time
 	 */
-	public void convolve(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isYDirection) {
+	public void convolve(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isYDirection, int w, int h) {
 
 		// if u = 0 or u = width - 1 or v = 0 or v = height - 1
-		int x = 0; int y = 0;
-		while (y < w)  
+		// int x = 0; int y = 0;
+		// while (y < w)  
 		
 		for (int v = 1; v <= h-2; v++) {
 			for (int u = 1; u <= w-2; u++) {
@@ -73,7 +69,8 @@ public class Gradient_Magnitude implements PlugInFilter {
 				}
 				int p = (int) Math.round(sum);
 				if (p < 0) p = 0;
-
+				if (p > 255) p = 255;
+				//System.out.println("in GM p: " + p);
 				ipDest.putPixel(u, v, p);
 			}
 		}
@@ -98,18 +95,19 @@ public class Gradient_Magnitude implements PlugInFilter {
 		ImageProcessor J = ip.duplicate();
 		ImageProcessor ipCopy = ip.duplicate();
 
-		w = ip.getWidth();
-		h = ip.getHeight();
+		int w = ip.getWidth();
+		int h = ip.getHeight();
 
 		//separable Sobel filters see textbook p.122
 		float Hzero[] = {-1f, 0f, 1f};
 		float Hone[]  = {1f, 2f, 1f};
 
 		//convolve the image using the separable convolution routine
-		convolve(ipCopy, I, Hone, true);
-		convolve(ipCopy, I, Hzero, false);
-		convolve(ipCopy, J, Hone, false);
-		convolve(ipCopy, J, Hzero, true);
+		//with one separable Sobel filter at a time
+		convolve(ipCopy, I, Hone, true, w, h);
+		convolve(ipCopy, I, Hzero, false, w, h);
+		convolve(ipCopy, J, Hone, false, w, h);
+		convolve(ipCopy, J, Hzero, true, w, h);
 
 		// Compute E(u, v), the gradient magnitude see book p.122
 		for (int v = 0; v < h; v++) {

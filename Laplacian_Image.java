@@ -27,6 +27,8 @@ import ij.process.ImageProcessor;
 public class Laplacian_Image implements PlugInFilter {
 	protected ImagePlus image;
 
+	private float Hlaplace[] = {1f, -2f, 1f};
+	
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
 	 * whether the current image is of an appropriate type.
@@ -38,8 +40,9 @@ public class Laplacian_Image implements PlugInFilter {
 	@Override
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
+
 		/*
-		 * 
+		 * DOES_32 handles float images 
  		 */
 		return DOES_8G | DOES_16 | DOES_32;
 	}
@@ -53,5 +56,19 @@ public class Laplacian_Image implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		
+		ImageProcessor I = ip.duplicate();
+		ImageProcessor ipCopy = ip.duplicate();
+
+		int w = ip.getWidth();
+		int h = ip.getHeight();
+
+		//use the separable convolution routine from Gradient_Magnitude
+		Gradient_Magnitude gm = new Gradient_Magnitude();
+		gm.convolve(ipCopy, I, Hlaplace, false, w, h);
+		gm.convolve(ipCopy, I, Hlaplace, true, w, h);
+		
+		new ImagePlus("this is I", I).show();
 	}
+
 }

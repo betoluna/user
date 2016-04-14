@@ -10,23 +10,11 @@ import ij.gui.*;
  * Email: nlunacano@wpi.edu
  * Date: April 13, 2016
  * Overview Description of Plugin:
- * After experiments, for eyes1 pupil radius is  and 10
- * 
- * 
+ * perform 2 types of flood fill algorithms to fill in each circle found in the image. 
+ * Metohds used: recursive, and coherence.
  */
 
 /**
- * Using the Hough Transform from question 1, modify the code to perform 2 types 
- * of flood fill algorithms to fill in each circle found in the image (25 points). 
- * The result should be a binary image with the foreground contains only the filled-in 
- * circles and the background is 0. The plugin should be named Circle_Flood and should 
- * contain a Boolean variable which could be modified switch between the flood fill methods. 
- * The first method should be the naive recursive flood fill algorithm (see Algorithm 11.1 in book). 
- * The second method you should implement is the Coherence method described in class lec 07 p. 48.
- * 
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
- * modified and the implications of modifying the variable.
  * Note, for simplicity, not for design, most code is duplicated from Circular_Hough.java 
  * as permitted in the problem specification. 
  */
@@ -34,18 +22,14 @@ public class Circle_Flood implements PlugInFilter {
 	protected ImagePlus image;
 
     Stack<Coordinate> stack;
-
-	public int width;
-    public int height;
-    public int radiiSpan;
-    byte byteArrayImage[];
-    double ACCUMULATOR[][][];
-    int lookUpTable[][][];
     ArrayList<Circle> circleList;
-    public int minRad;
-    public int maxRad;
-    public int step;
-    public int numCircles;// num of circles to find
+
+	//determine whether to use coherence or recursion floodFill
+    private boolean useCoherence = true;
+    
+    private int numCircles;// num of circles to find   
+    private int minRad;
+    private int maxRad;
     
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
@@ -132,24 +116,26 @@ public class Circle_Flood implements PlugInFilter {
         copy.convertToGray8();
         ip = imageCopy.getProcessor();
 
-        width = ip2.getWidth();
-        height = ip2.getHeight();
-        byteArrayImage = (byte[]) ip2.getPixels();//array of image pixels
+        int width = ip2.getWidth();
+        int height = ip2.getHeight();
+        byte byteArrayImage[] = (byte[]) ip2.getPixels();//array of image pixels
 
         if (readParameters()) {
 
             //create a look up table 
             //increment theta each time by some proportion of 360 degrees
             int thetaIncrement = Math.round(minRad * 45);
-            lookUpTable = new int[2][thetaIncrement][radiiSpan];
+            int step = 2;//radius increment  
+            int radiiSpan = ((maxRad - minRad) / step) + 1;
+            int lookUpTable[][][] = new int[2][thetaIncrement][radiiSpan];
             int tableLen = 0;
             for (int r = minRad; r <= maxRad; r = r + step) {
                 tableLen = 0;
                 for (int numerator = 0; numerator < thetaIncrement; numerator++) {
-                    double angle = (2 * Math.PI * (double) numerator) / (double) thetaIncrement;
+                    double theta = (2 * Math.PI * (double) numerator) / (double) thetaIncrement;
                     int radiusIndex = (r - minRad) / step;
-                    int rCosTheta = (int) Math.round((double) r * Math.cos(angle));
-                    int rSinTheta = (int) Math.round((double) r * Math.sin(angle));
+                    int rCosTheta = (int) Math.round((double) r * Math.cos(theta));
+                    int rSinTheta = (int) Math.round((double) r * Math.sin(theta));
                     if ((rCosTheta != lookUpTable[0][tableLen][radiusIndex]) && (rSinTheta != lookUpTable[1][tableLen][radiusIndex]) || (tableLen == 0)) {
                         lookUpTable[0][tableLen][radiusIndex] = rCosTheta;
                         lookUpTable[1][tableLen][radiusIndex] = rSinTheta;
@@ -159,7 +145,7 @@ public class Circle_Flood implements PlugInFilter {
             }
 
             //create and fill Hough Accumulator 
-            ACCUMULATOR = new double[width][height][radiiSpan];
+            double ACC[][][] = new double[width][height][radiiSpan];
             for (int y = 1; y < height - 1; y++) {
                 for (int x = 1; x < width - 1; x++) {
                     for (int r = minRad; r <= maxRad; r = r + step) {
@@ -170,7 +156,7 @@ public class Circle_Flood implements PlugInFilter {
                                 int a = x + lookUpTable[1][i][radiusIndex];
                                 int b = y + lookUpTable[0][i][radiusIndex];
                                 if ((b >= 0) && (b < height) && (a >= 0) && (a < width)) {
-                                    ACCUMULATOR[a][b][radiusIndex] += 1;//increase accumulator at this index
+                                    ACC[a][b][radiusIndex] += 1;//increase accumulator at this index
                                 }
                             }
                         }
@@ -189,8 +175,8 @@ public class Circle_Flood implements PlugInFilter {
                     int radiusIndex = (r - minRad) / step;
                     for (int y = 0; y < height; y++) {
                         for (int x = 0; x < width; x++) {
-                            if (ACCUMULATOR[x][y][radiusIndex] > counterMax) {
-                                counterMax = ACCUMULATOR[x][y][radiusIndex];
+                            if (ACC[x][y][radiusIndex] > counterMax) {
+                                counterMax = ACC[x][y][radiusIndex];
                                 maxX = x;
                                 maxY = y;
                                 maxR = r;
@@ -198,8 +184,7 @@ public class Circle_Flood implements PlugInFilter {
                         }
                     }
                 }
-               
-                circleList.add(new Circle(maxX, maxY, maxR));
+                circleList.add(new Circle(maxX, maxY, maxR));// add this circle
 
                 //remove unwanted neighbor values (less than maxima) from the accumulator space
                 //from center maxima to a distance of approx maximum radius divided by 2  
@@ -219,20 +204,20 @@ public class Circle_Flood implements PlugInFilter {
                     int radiusIndex = (r - minRad) / step;
                     for (int ii = y1; ii < y2; ii++) {
                         for (int j = x1; j < x2; j++) {
-                            if (Math.pow(j - maxX, 2.0) + Math.pow(ii - maxY, 2.0) < rOver2Squared) {
-                                ACCUMULATOR[j][ii][radiusIndex] = 0.0;//replace value with zero
+                            if (rOver2Squared > (j - maxX) * (j - maxX) + (ii - maxY) * (ii - maxY)) {
+                                ACC[j][ii][radiusIndex] = 0;//replace value with zero
                             }
                         }
                     }
                 }
             }
 
-            // draw edges in image with intensity value 127 
+            // draw edges in image with intensity value 127 (max positive value for a byte in two's complement)
             int edgePos = 0;
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
                     if (byteArrayImage[x + width * y] != 0) {
-                        edges[edgePos] = 127;//max positive value for a byte in two's complement 
+                        edges[edgePos] = 127; 
                     } else {
                         edges[edgePos] = 0;
                     }
@@ -246,107 +231,56 @@ public class Circle_Flood implements PlugInFilter {
                 int y = circle.getY();
                 int r = circle.getRadius();
 
-                plotCircle(x, y, r, edgeImProc);//plot white circles on processed 8-bit image
-                //fillCircle_Coherence(x, y, r, edgeImProc);
+                if (useCoherence) {
+                    coherenceFloodFill(x, y, r, edgeImProc);
+                } else {
+                    recursiveFloodFill(edgeImProc, x, y, r, x, y, 255);
+                }     
             }
 
             new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
-            //new ImagePlus(numCircles + " Circles Found", ip).show();
         }
     }//end run
-   
-   	/**
-	* Given center coordiantes and radius, draw a circle.
-	* Own implementation of "A Fast Bresenham Type Algorithm For Drawing Circles"
-	* http://web.engr.oregonstate.edu/~sllu/bcircle.pdf
-	* @param CX the center x coordinate
-	* @param CY the center y coordinate
-	* @param R the circle's radius
-	*/
-	public void plotCircle(int CX, int CY, int R, ImageProcessor proc) {
-		int X = R;
-		int Y = 0;
-		int xChange = 1 - 2*R;
-		int yChange = 1;
-		int radiusError = 0;
 
-		while (X >= Y) {
-			// proc.set(CX + X, CY + Y, 255);//use faster set() instead of putPixel()
-			// proc.set(CX - X, CY + Y, 255);
-			// proc.set(CX - X, CY - Y, 255);
-			// proc.set(CX + X, CY - Y, 255);
-			// proc.set(CX + Y, CY + X, 255);
-			// proc.set(CX - Y, CY + X, 255);
-			// proc.set(CX - Y, CY - X, 255);
-			// proc.set(CX + Y, CY - X, 255);
+    /**
+    * @param CX and CY the circle center (seed)
+    * @param R the radius of the circle
+    * @param u and v the new possible point coordinates in circle
+    * @param proc the omage processor
+    * @param label 
+    */
+    public void recursiveFloodFill(ImageProcessor proc, int CX, int CY, int R, int u, int v, int label) {   
 
-            // if time permits, use these variables updates in fillCircle_Coherence
-            int v;
-            proc.set(CX + X, CY + Y, 255);//use faster set() instead of putPixel()
-            proc.set(CX - X, CY + Y, 255);
-            v = CY + Y;
-            for (int u = CX + X; u >= CX - X; u--) {
-                proc.set(u, v, 255);
-            }
-            proc.set(CX - X, CY - Y, 255);
-            proc.set(CX + X, CY - Y, 255);
-            v = CY - Y;
-            for (int u = CX + X; u >= CX - X; u--) {
-                proc.set(u, v, 255);
-            }
-            proc.set(CX + Y, CY + X, 255);
-            proc.set(CX - Y, CY + X, 255);
-            v = CY + X;
-            for (int u = CX + Y; u >= CX - Y; u--) {
-                proc.set(u, v, 255);
-            }
-            proc.set(CX - Y, CY - X, 255);
-            proc.set(CX + Y, CY - X, 255);
-            v = CY - X;
-            for (int u = CX + Y; u >= CX - Y; u--) {
-                proc.set(u, v, 255);
-            }
+        //compute if u and v are within circle boundaries by the distance formula 
+        int d = (int) Math.sqrt( (double) ((u - CX) * (u - CX) + (v - CY) * (v - CY)) );
 
-			Y++;
-			radiusError = radiusError + yChange;
-			yChange = yChange + 2;
+        if (d > R) return;       
+       
+        proc.set(u, v, label);
 
-			if (2 * radiusError + xChange > 0) {
-				X--;
-				radiusError = radiusError + xChange;
-				xChange = xChange + 2;
-			}
-		}
-	}
+        recursiveFloodFill(proc, CX, CY, R, u + 1, v, label);
+        recursiveFloodFill(proc, CX, CY, R, u, v + 1, label);
+        recursiveFloodFill(proc, CX, CY, R, u, v - 1, label);
+        recursiveFloodFill(proc, CX, CY, R, u - 1, v, label);
+    }
 
-	/**
-	* Fill circle by coherence method. x and y are the center coordinates, 
-	* r the radius
-	*/
-	public void fillCircle_Coherence(int CX, int CY, int R, ImageProcessor proc) {
-        int radius = R;
-        int rightX = CX + R;//rightmost x coordinate
-        int rightY = CY;       //rightmost y coordinate
-        int leftX = CX - R;
-        int  yPointerAbove = CY;
-        int  yPointerBelow = CY;
-
+    /**
+    * Fill circle by coherence method. CX and CY are the center coordinates, R the radius
+    */
+    public void coherenceFloodFill(int CX, int CY, int R, ImageProcessor proc) {
         int X = R;
-        //int Y = 0;
+        int Y = 0;
         int xChange = 1 - 2*R;
         int yChange = 1;
         int radiusError = 0;
 
-        stack.push(new Coordinate(rightX, rightY, leftX));
-        while (!stack.empty()) {
-            //Pop stack to provide next seed, fill in run defined by seed
-            Coordinate c = stack.pop();
-            int v = c.getY();
-            leftX = c.getleftX();
-            for (int u = c.getX(); u > leftX; u--) {
-                proc.set(u, v, 255);
-            }
+        while (X >= Y) {
+            stack.push(new Coordinate(CX + X, CY + Y, CX - X));
+            stack.push(new Coordinate(CX + X, CY - Y, CX - X));
+            stack.push(new Coordinate(CX + Y, CY + X, CX - Y));
+            stack.push(new Coordinate(CX + Y, CY - X, CX - Y));
 
+            Y++;
             radiusError = radiusError + yChange;
             yChange = yChange + 2;
 
@@ -355,33 +289,23 @@ public class Circle_Flood implements PlugInFilter {
                 radiusError = radiusError + xChange;
                 xChange = xChange + 2;
             }
-
-            radius = X;
-
-            rightX = CX + radius;
-            leftX = CX - radius;
-
-            //In row above find reachable runs
-            yPointerAbove++;
-            rightY = yPointerAbove;
-            if (rightY <= CY + R) {
-                stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
-            }
-
-            //In row below find reachable runs
-            yPointerBelow--;
-            rightY = yPointerBelow;
-            if (rightY >= CY - R) {
-                stack.push(new Coordinate(rightX, rightY, leftX));//Push address of their rightmost pixel
-            }
         }
+
+        while (!stack.empty()) {
+            //Pop stack to provide next seed, fill in run defined by seed
+            Coordinate c = stack.pop();
+            int v = c.getY();
+            int leftX = c.getleftX();
+            for (int u = c.getX(); u >= leftX; u--) {
+                proc.set(u, v, 255);
+            }
+        }          
     }
 
     boolean readParameters() {
         GenericDialog gd = new GenericDialog("Hough Parameters", IJ.getInstance());
         gd.addNumericField("Minimum radius (in pixels) :", 10, 0);
         gd.addNumericField("Maximum radius (in pixels)", 20, 0);
-        gd.addNumericField("Increment radius (in pixels) :", 2, 0);
         gd.addNumericField("Number of Circles (NC): (enter 0 if using threshold)", 10, 0);
 
         gd.showDialog();
@@ -392,10 +316,10 @@ public class Circle_Flood implements PlugInFilter {
 
         minRad = (int) gd.getNextNumber();
         maxRad = (int) gd.getNextNumber();
-        step = (int) gd.getNextNumber();
-        radiiSpan = ((maxRad - minRad) / step) + 1;
         numCircles = (int) gd.getNextNumber();
 
         return true;
     }
+
+    
 }

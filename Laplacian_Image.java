@@ -1,6 +1,7 @@
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
+import ij.process.ImageConverter;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
@@ -56,6 +57,10 @@ public class Laplacian_Image implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		//handle floating point image and convert it to 8-bit grayscale
+		ImageConverter orig = new ImageConverter(image);
+		orig.convertToGray8();
+        ip = image.getProcessor();
 		
 		ImageProcessor I = ip.duplicate();
 		ImageProcessor ipCopy = ip.duplicate();

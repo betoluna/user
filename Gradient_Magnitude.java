@@ -71,7 +71,7 @@ public class Gradient_Magnitude implements PlugInFilter {
 				if (p < 0) p = 0;
 				if (p > 255) p = 255;
 				//System.out.println("in GM p: " + p);
-				ipDest.putPixel(u, v, p);
+				ipDest.set(u, v, p);
 			}
 		}
 	}

@@ -29,7 +29,8 @@ import java.util.*;
 public class Zero_Crossings implements PlugInFilter {
 	protected ImagePlus image;
 
-	private int prev, next;
+	private int prev;
+	private int zeros;
 
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
@@ -57,6 +58,8 @@ public class Zero_Crossings implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		prev = 1;
+		zeros = 0;
 		//handle floating point image and convert it to 8-bit grayscale
 		ImageConverter orig = new ImageConverter(image);
 		orig.convertToGray8();
@@ -109,24 +112,70 @@ public class Zero_Crossings implements PlugInFilter {
 				int p = (int) Math.round(sum);
 				System.out.println("p: " + p);
 
-				if (!sameSign(prev, p)) {
-					neighbors.add(p);
-					next = p;
-				}
+				//######################################
+				// 1
+				// if (p == 0) {
+				// 	zeros++;
+				// } else { // p is not zero
+				// 	if (!sameSign(prev, p)) {
+				// 		//update prev to current p
+				// 		//prev = p;
 
-				if (p == 0) {
-					continue;
-				}
-
-				// 	p = 0;
+				// 		// if we have a run of zeros
+				// 		if (zeros > 0) {
+				// 			for (int i = 1; i <= zeros; i++) {
+				// 				ipDest.set(u - i, v, 255);
+				// 			}
+				// 			zeros = 0;
+				// 			prev = p;
+				// 		} else { //opposite sign ints are next to each other
+				// 			//compute abs value of opposite sign ints
+				// 			int left = Math.abs(prev);
+				// 			int right = Math.abs(p);
+				// 			if (left > right) {
+				// 				ipDest.set(u, v, 255);
+				// 			} else if (left < right || left == right) {
+				// 				ipDest.set(u - 1, v, 255);
+				// 			}
+				// 			prev = p;
+				// 		}			
+				// 	} else { // prev and p have the same sign
+				// 		ipDest.set(u, v, 0);
+				// 		prev = p;
+				// 	}
 				// }
+				//######################################
+				// 2
+				if (p != 0) {
+					if (!sameSign(prev, p)) {
+						int left = Math.abs(prev);
+						int right = Math.abs(p);
+						if (left > right) {
+							ipDest.set(u, v, 255);
+						} else if (left < right || left == right) {
+							ipDest.set(u - 1, v, 255);
+						}
+						prev = p;
+					} else { // prev and p have the same sign
+						ipDest.set(u, v, 0);
+						prev = p;
+					}
+				} else { //p = 0
+					ipDest.set(u, v, 0);
+					prev = p;
+				}
+
+
+
+				//######################################		
+				// if (p < 0) p = 0;
 				// if (p > 255) p = 255;
-				
-				ipDest.set(u, v, p);
+				// ipDest.set(u, v, p);
 			}
 		}
 	}
 
+	//check if two ints have the same sign
 	public static boolean sameSign(int x, int y) {
         return (x >= 0) ^ (y < 0);//consider zero non-negative
     }

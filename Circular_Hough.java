@@ -12,34 +12,22 @@ import ij.gui.*;
  * Overview Description of Plugin:
  * For coins.png set radius bet 25 - 30
  * For eyes1 it finds right pupil with radius bet 7  - 8, left pupil bet 3 - 5 but separate runs and only 1 circle
- *
+ * Best radius range for the coins image is between 25 and 30. This was the image I tested on.
  */
 
 /**
- * Burger and Burge Exercise 9.4 (page 171) (30 points): Implement as an ImageJ plugin,
- * called Circular_Hough, the Hough Transform for finding circles with varying radii.
- * Make use of a fast algorithm for generating circles, such as described in sec 9.4,
- * in the accumulator Array. Suitable images to test your algorithm will be posted on
- * the class site. Test at least one image with your submission. Also explain briefly how
- * your algorithm works in your comments in the code.
- *
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
- * modified and the implications of modifying the variable.
+ * This class implements the Hough Transform for finding circles with varying radii.
+ * 
  */
 public class Circular_Hough implements PlugInFilter {
     protected ImagePlus image;
 
     private ArrayList<Circle> circleList;
 
-    private int numCircles;// num of circles to find   
-    private int minRad;
-    private int maxRad;
-
-    //initialized in gui, change when gui is removed
-    // private int step;
-    // private int radiiSpan;
-        
+    private int numCircles = 10;// num of circles to find   
+    private int minRad = 25;
+    private int maxRad = 30;
+    
     /**
      * This method gets called by ImageJ / Fiji to determine
      * whether the current image is of an appropriate type.
@@ -145,152 +133,123 @@ public class Circular_Hough implements PlugInFilter {
         int height = ip2.getHeight();
         byte byteArrayImage[] = (byte[]) ip2.getPixels();//array of image pixels
 
-        if (readParameters()) {
+        //create a look up table 
+        //increment theta each time by some proportion of 360 degrees
+        int thetaIncrement = Math.round(minRad * 45);
+        int step = 2;// radius increment
+        int radiiSpan = ((maxRad - minRad) / step) + 1;
+        int lookUpTable[][][] = new int[2][thetaIncrement][radiiSpan];
+        int tableLen = 0;
+        for (int r = minRad; r <= maxRad; r = r + step) {
+            tableLen = 0;
+            for (int numerator = 0; numerator < thetaIncrement; numerator++) {
+                double theta = (2 * Math.PI * (double) numerator) / (double) thetaIncrement;
+                int radiusIndex = (r - minRad) / step;
+                int rCosTheta = (int) Math.round((double) r * Math.cos(theta));
+                int rSinTheta = (int) Math.round((double) r * Math.sin(theta));
+                if ((rCosTheta != lookUpTable[0][tableLen][radiusIndex]) && (rSinTheta != lookUpTable[1][tableLen][radiusIndex]) || (tableLen == 0)) {
+                    lookUpTable[0][tableLen][radiusIndex] = rCosTheta;
+                    lookUpTable[1][tableLen][radiusIndex] = rSinTheta;
+                    tableLen++;
+                }
+            }
+        }
 
-            //create a look up table 
-            //increment theta each time by some proportion of 360 degrees
-            int thetaIncrement = Math.round(minRad * 45);
-            int step = 2;// radius increment
-            int radiiSpan = ((maxRad - minRad) / step) + 1;
-            int lookUpTable[][][] = new int[2][thetaIncrement][radiiSpan];
-            int tableLen = 0;
+        //create and fill Hough Accumulator 
+        double ACC[][][] = new double[width][height][radiiSpan];
+        for (int y = 1; y < height - 1; y++) {
+            for (int x = 1; x < width - 1; x++) {
+                for (int r = minRad; r <= maxRad; r = r + step) {
+                    //if potential edge pixel
+                    if (ip2.get(x, y) == 255) {
+                        int radiusIndex = (r - minRad) / step;
+                        for (int i = 0; i < tableLen; i++) {
+                            int a = x + lookUpTable[1][i][radiusIndex];
+                            int b = y + lookUpTable[0][i][radiusIndex];
+                            if ((b >= 0) && (b < height) && (a >= 0) && (a < width)) {
+                                ACC[a][b][radiusIndex] += 1;//increase accumulator at this index
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ImageProcessor edgeImProc = new ByteProcessor(width, height);
+        byte[] edges = (byte[]) edgeImProc.getPixels();
+
+        // compute circle origin coordiantes and radius
+        int maxX = 0, maxY = 0, maxR = 0;
+        for (int i = 0; i < numCircles; i++) {
+            double counterMax = -1;
             for (int r = minRad; r <= maxRad; r = r + step) {
-                tableLen = 0;
-                for (int numerator = 0; numerator < thetaIncrement; numerator++) {
-                    double theta = (2 * Math.PI * (double) numerator) / (double) thetaIncrement;
-                    int radiusIndex = (r - minRad) / step;
-                    int rCosTheta = (int) Math.round((double) r * Math.cos(theta));
-                    int rSinTheta = (int) Math.round((double) r * Math.sin(theta));
-                    if ((rCosTheta != lookUpTable[0][tableLen][radiusIndex]) && (rSinTheta != lookUpTable[1][tableLen][radiusIndex]) || (tableLen == 0)) {
-                        lookUpTable[0][tableLen][radiusIndex] = rCosTheta;
-                        lookUpTable[1][tableLen][radiusIndex] = rSinTheta;
-                        tableLen++;
-                    }
-                }
-            }
-
-            //create and fill Hough Accumulator 
-            double ACC[][][] = new double[width][height][radiiSpan];
-            for (int y = 1; y < height - 1; y++) {
-                for (int x = 1; x < width - 1; x++) {
-                    for (int r = minRad; r <= maxRad; r = r + step) {
-                        //if potential edge pixel
-                        if (ip2.get(x, y) == 255) {
-                            int radiusIndex = (r - minRad) / step;
-                            for (int i = 0; i < tableLen; i++) {
-                                int a = x + lookUpTable[1][i][radiusIndex];
-                                int b = y + lookUpTable[0][i][radiusIndex];
-                                if ((b >= 0) && (b < height) && (a >= 0) && (a < width)) {
-                                    ACC[a][b][radiusIndex] += 1;//increase accumulator at this index
-                                }
-                            }
+                int radiusIndex = (r - minRad) / step;
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        if (ACC[x][y][radiusIndex] > counterMax) {
+                            counterMax = ACC[x][y][radiusIndex];
+                            maxX = x;
+                            maxY = y;
+                            maxR = r;
                         }
                     }
                 }
             }
+            circleList.add(new Circle(maxX, maxY, maxR));// add this circle
 
-            ImageProcessor edgeImProc = new ByteProcessor(width, height);
-            byte[] edges = (byte[]) edgeImProc.getPixels();
+            //remove unwanted neighbor values (less than maxima) from the accumulator space
+            //from center maxima to a distance of approx maximum radius divided by 2  
+            double rOver2 = maxR / 2.0;
+            int x1, x2, y1, y2;            
+            if ((x1 = (int) Math.floor((double) maxX - rOver2)) < 0)
+                x1 = 0;
+            if ((x2 = (int) Math.ceil((double) maxX + rOver2) + 1) > width)
+                x2 = width;
+            if ((y1 = (int) Math.floor((double) maxY - rOver2)) < 0)
+                y1 = 0;
+            if ((y2 = (int) Math.ceil((double) maxY + rOver2) + 1) > height)
+                y2 = height;
 
-            // compute circle origin coordiantes and radius
-            int maxX = 0, maxY = 0, maxR = 0;
-            for (int i = 0; i < numCircles; i++) {
-                double counterMax = -1;
-                for (int r = minRad; r <= maxRad; r = r + step) {
-                    int radiusIndex = (r - minRad) / step;
-                    for (int y = 0; y < height; y++) {
-                        for (int x = 0; x < width; x++) {
-                            if (ACC[x][y][radiusIndex] > counterMax) {
-                                counterMax = ACC[x][y][radiusIndex];
-                                maxX = x;
-                                maxY = y;
-                                maxR = r;
-                            }
-                        }
-                    }
-                }
-                circleList.add(new Circle(maxX, maxY, maxR));// add this circle
-
-                //remove unwanted neighbor values (less than maxima) from the accumulator space
-                //from center maxima to a distance of approx maximum radius divided by 2  
-                double rOver2 = maxR / 2.0;
-                int x1, x2, y1, y2;            
-                if ((x1 = (int) Math.floor((double) maxX - rOver2)) < 0)
-                    x1 = 0;
-                if ((x2 = (int) Math.ceil((double) maxX + rOver2) + 1) > width)
-                    x2 = width;
-                if ((y1 = (int) Math.floor((double) maxY - rOver2)) < 0)
-                    y1 = 0;
-                if ((y2 = (int) Math.ceil((double) maxY + rOver2) + 1) > height)
-                    y2 = height;
-
-                double rOver2Squared = rOver2 * rOver2;
-                for (int r = minRad; r <= maxRad; r = r + step) {
-                    int radiusIndex = (r - minRad) / step;
-                    for (int ii = y1; ii < y2; ii++) {
-                        for (int j = x1; j < x2; j++) {
-                            if (rOver2Squared > (j - maxX) * (j - maxX) + (ii - maxY) * (ii - maxY)) {
-                                ACC[j][ii][radiusIndex] = 0;//replace value with zero
-                            }
+            double rOver2Squared = rOver2 * rOver2;
+            for (int r = minRad; r <= maxRad; r = r + step) {
+                int radiusIndex = (r - minRad) / step;
+                for (int ii = y1; ii < y2; ii++) {
+                    for (int j = x1; j < x2; j++) {
+                        if (rOver2Squared > (j - maxX) * (j - maxX) + (ii - maxY) * (ii - maxY)) {
+                            ACC[j][ii][radiusIndex] = 0;//replace value with zero
                         }
                     }
                 }
             }
+        }
 
-            // draw edges in image with intensity value 127 (max positive value for a byte in two's complement)
-            int edgePos = 0;
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    if (byteArrayImage[x + width * y] != 0) {
-                        edges[edgePos] = 127; 
-                    } else {
-                        edges[edgePos] = 0;
-                    }
-
-                    edgePos++;
+        // draw edges in image with intensity value 127 (max positive value for a byte in two's complement)
+        int edgePos = 0;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (byteArrayImage[x + width * y] != 0) {
+                    edges[edgePos] = 127; 
+                } else {
+                    edges[edgePos] = 0;
                 }
+
+                edgePos++;
             }
+        }
 
-            for (Circle circle : circleList) {
-                int x = circle.getX();
-                int y = circle.getY();
-                int r = circle.getRadius();
+        for (Circle circle : circleList) {
+            int x = circle.getX();
+            int y = circle.getY();
+            int r = circle.getRadius();
 
-                //plotCircle(x, y, r, edgeImProc);
-                plotCircle(x, y, r, ip);//plot white circles on original 8-bit image
-
-            }
-
-            //new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
-            new ImagePlus(numCircles + " Circles Found", ip).show();
-
+            plotCircle(x, y, r, ip);//plot white circles on original 8-bit image
 
         }
+
+        new ImagePlus("Circular Hough", ip).show();
+        
     }//end run
    
-   
-
-    boolean readParameters() {
-        GenericDialog gd = new GenericDialog("Hough Parameters", IJ.getInstance());
-        gd.addNumericField("Minimum radius (in pixels) :", 10, 0);
-        gd.addNumericField("Maximum radius (in pixels)", 20, 0);
-        //gd.addNumericField("Increment radius (in pixels) :", 2, 0);
-        gd.addNumericField("Number of Circles (NC): (enter 0 if using threshold)", 10, 0);
-
-        gd.showDialog();
-
-        if (gd.wasCanceled()) {
-            return (false);
-        }
-
-        minRad = (int) gd.getNextNumber();
-        maxRad = (int) gd.getNextNumber();
-        // step = (int) gd.getNextNumber();
-        // radiiSpan = ((maxRad - minRad) / step) + 1;
-        numCircles = (int) gd.getNextNumber();
-
-        return true;
-    }
 }
 
 

@@ -238,7 +238,7 @@ public class Circle_Flood implements PlugInFilter {
                 }     
             }
 
-            new ImagePlus(numCircles + " Circles Found", edgeImProc).show();
+            new ImagePlus("Circular_Hough", edgeImProc).show();
         }
     }//end run
 

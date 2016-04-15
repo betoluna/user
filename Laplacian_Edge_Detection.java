@@ -1,28 +1,19 @@
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
+import ij.process.ImageConverter;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
  * Name: Norberto Luna-Cano
  * Email: nlunacano@wpi.edu
- * Date: 4/13/16
- * Overview Description of Plugin:
- * 
- * 
- * 
+ * Date: 4/16/16
  */
 
 /**
- * Instructions: Use this plugin filter as a template for your plugin implementations.
- * Specifically for the run method, replace the description with your own deetailed 
- * description of the implementation of the algorithm you are implementing. 
- * You may include assumptions being made, the algorithms being used, any special 
- * variables referenced, etc.
- * 
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
- * modified and the implications of modifying the variable.
+ * This class makes use of Gradient_Magnitude, Lapacian_Image,
+ * and Zero Crossings plugins to perform edge detection.
+ * output is a binary image with 255 at edges and zero elsewhere.
  */
 public class Laplacian_Edge_Detection implements PlugInFilter {
 	protected ImagePlus image;
@@ -39,9 +30,9 @@ public class Laplacian_Edge_Detection implements PlugInFilter {
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
 		/*
-		 * 
+		 * Handles any type of image
  		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_ALL;
 	}
 
 	/**
@@ -53,5 +44,37 @@ public class Laplacian_Edge_Detection implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		ImageConverter orig = new ImageConverter(image);
+		orig.convertToGray8();
+        ip = image.getProcessor();
+		
+		ImageProcessor I = ip.duplicate();
+		ImageProcessor J = ip.duplicate();
+		ImageProcessor ipCopy = ip.duplicate();
+
+		int w = ip.getWidth();
+		int h = ip.getHeight();
+
+		//use the separable convolution routine from Gradient_Magnitude
+		Gradient_Magnitude gm = new Gradient_Magnitude();
+
+		gm.convolve(ipCopy, I, gm.Hone, true, w, h);
+		gm.convolve(ipCopy, I, gm.Hzero, false, w, h);
+		gm.convolve(ipCopy, J, gm.Hone, false, w, h);
+		gm.convolve(ipCopy, J, gm.Hzero, true, w, h);
+
+		gm.computeEdgeStrength(I, J, ipCopy, w, h);
+
+		//now use the ouput of Gradient_magnitude stored in ipCopy
+		ipCopy.threshold(40);
+		new ImagePlus("ipCopy", ipCopy).show();
+
+		//ImageProcessor ip2 = new ImageProcessor();
+		Zero_Crossings zc = new Zero_Crossings();
+		ImageProcessor K = ip.duplicate();
+		zc.process(ipCopy, K, zc.Hlaplace, false, w, h);
+		zc.process(ipCopy, K, zc.Hlaplace, true, w, h);
+
+		new ImagePlus("Laplacian Edge Detection", K).show();
 	}
 }

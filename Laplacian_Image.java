@@ -45,7 +45,7 @@ public class Laplacian_Image implements PlugInFilter {
 		/*
 		 * DOES_32 handles float images 
  		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_ALL;
 	}
 
 	/**
@@ -64,6 +64,8 @@ public class Laplacian_Image implements PlugInFilter {
 		
 		ImageProcessor I = ip.duplicate();
 		ImageProcessor ipCopy = ip.duplicate();
+		//ipCopy.smooth();
+		//ipCopy.threshold(80);
 
 		int w = ip.getWidth();
 		int h = ip.getHeight();

@@ -3,34 +3,29 @@ import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
 import ij.plugin.filter.Convolver;
 import ij.process.ImageConverter;
-import java.util.*;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
  * Name: Norberto Luna-Cano
  * Email: nlunacano@wpi.edu
- * Date: 4/13/16
+ * Date: 4/16/16
  * Overview Description of Plugin:
  * calculates the zero crossings in an image. It
  * This class sets a pixel to 255 if it is a zero crossing and 0 otherwise.
  */
 
 /**
- * Instructions: Use this plugin filter as a template for your plugin implementations.
- * Specifically for the run method, replace the description with your own deetailed 
- * description of the implementation of the algorithm you are implementing. 
- * You may include assumptions being made, the algorithms being used, any special 
- * variables referenced, etc.
- * 
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
- * modified and the implications of modifying the variable.
+ * This class makes use of a one dimensional gaussian filter
+ * with sigma = 1 for smoothing: makeGaussKernel1d(sigma)
+ * as implemented in the textbook.
  */
 public class Zero_Crossings implements PlugInFilter {
 	protected ImagePlus image;
 
-	private int prev;
-	private int zeros;
+	// private int prev;
+	// private int zeros;
+	public int sigma;
+	public float Hlaplace[] = {1f, -2f, 1f};
 
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
@@ -58,8 +53,10 @@ public class Zero_Crossings implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
-		prev = 1;
-		zeros = 0;
+		// prev = 1;
+		// zeros = 0;
+		sigma = 1;
+
 		//handle floating point image and convert it to 8-bit grayscale
 		ImageConverter orig = new ImageConverter(image);
 		orig.convertToGray8();
@@ -67,32 +64,36 @@ public class Zero_Crossings implements PlugInFilter {
 		
 		ImageProcessor I = ip.duplicate();
 		ImageProcessor ipCopy = ip.duplicate();
-
-		// float[] Hlaplace = { 0, 1, 0,
-		// 					 1, -4, 1,
-		// 					 0, 1, 0 };
-
+		
+		//use ImageJ smooth()
+		//ipCopy.smooth();
+		
+		//or alternatively use a gaussian smoothing filter with sigma = 1
+		// Gaussian_Blur gb = new Gaussian_Blur();
+		// float[] H = gb.makeGaussKernel1d(sigma);
 		// Convolver cv = new Convolver();
-		// cv.convolve(ipCopy, Hlaplace, 3, 3);
+		// cv.convolve(ipCopy, H, 1, H.length);
+		// cv.convolve(ipCopy, H, H.length, 1);
 
-		float Hlaplace[] = {1f, -2f, 1f};
+		ipCopy.threshold(127);
+
+		//float Hlaplace[] = {1f, -2f, 1f};
 
 		int w = ip.getWidth();
 		int h = ip.getHeight();
 
-		convolve(ipCopy, I, Hlaplace, false, w, h);
-		convolve(ipCopy, I, Hlaplace, true, w, h);
+		process(ipCopy, I, Hlaplace, false, w, h);
+		process(ipCopy, I, Hlaplace, true, w, h);
 
 		new ImagePlus("ipCopy", I).show();
 	}
 
 	/* 
-	 * Separable convolution routine.
+	 * This method does separable convolution plus comptes the zero-crossings.
 	 */
-	public void convolve(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isYDirection, int w, int h) {
-		ArrayList<Integer> neighbors = new ArrayList<Integer>();
-
-		
+	public void process(ImageProcessor orig, ImageProcessor ipDest, float H[], boolean isYDirection, int w, int h) {
+		int prev = 1;
+		int zeros = 0;
 		for (int v = 1; v <= h-2; v++) {
 			for (int u = 1; u <= w-2; u++) {
 				double sum = 0;
@@ -110,42 +111,12 @@ public class Zero_Crossings implements PlugInFilter {
 					sum = sum + temp * H[idx++];
 				}
 				int p = (int) Math.round(sum);
-				System.out.println("p: " + p);
-
-				//######################################
-				// 1
-				// if (p == 0) {
-				// 	zeros++;
-				// } else { // p is not zero
-				// 	if (!sameSign(prev, p)) {
-				// 		//update prev to current p
-				// 		//prev = p;
-
-				// 		// if we have a run of zeros
-				// 		if (zeros > 0) {
-				// 			for (int i = 1; i <= zeros; i++) {
-				// 				ipDest.set(u - i, v, 255);
-				// 			}
-				// 			zeros = 0;
-				// 			prev = p;
-				// 		} else { //opposite sign ints are next to each other
-				// 			//compute abs value of opposite sign ints
-				// 			int left = Math.abs(prev);
-				// 			int right = Math.abs(p);
-				// 			if (left > right) {
-				// 				ipDest.set(u, v, 255);
-				// 			} else if (left < right || left == right) {
-				// 				ipDest.set(u - 1, v, 255);
-				// 			}
-				// 			prev = p;
-				// 		}			
-				// 	} else { // prev and p have the same sign
-				// 		ipDest.set(u, v, 0);
-				// 		prev = p;
-				// 	}
-				// }
-				//######################################
-				// 2
+				//System.out.println("p: " + p);
+				
+				// compute the actual zero-crossings here:
+				// when 'p' (which results from convolving the laplacian
+				// with each pixel) changes sign, put 255 at zero-crossing
+				// otherwise put 0.
 				if (p != 0) {
 					if (!sameSign(prev, p)) {
 						int left = Math.abs(prev);
@@ -165,12 +136,6 @@ public class Zero_Crossings implements PlugInFilter {
 					prev = p;
 				}
 
-
-
-				//######################################		
-				// if (p < 0) p = 0;
-				// if (p > 255) p = 255;
-				// ipDest.set(u, v, p);
 			}
 		}
 	}

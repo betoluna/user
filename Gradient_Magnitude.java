@@ -25,6 +25,10 @@ import ij.process.ImageConverter;
 public class Gradient_Magnitude implements PlugInFilter {
 	protected ImagePlus image;
 
+	//separable Sobel filters see textbook p.122
+	public float Hzero[] = {-1f, 0f, 1f};
+	public float Hone[]  = {1f, 2f, 1f};
+
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
 	 * whether the current image is of an appropriate type.
@@ -95,13 +99,14 @@ public class Gradient_Magnitude implements PlugInFilter {
 		ImageProcessor I = ip.duplicate();
 		ImageProcessor J = ip.duplicate();
 		ImageProcessor ipCopy = ip.duplicate();
+		//ipCopy.threshold(80);
 
 		int w = ip.getWidth();
 		int h = ip.getHeight();
 
 		//separable Sobel filters see textbook p.122
-		float Hzero[] = {-1f, 0f, 1f};
-		float Hone[]  = {1f, 2f, 1f};
+		// float Hzero[] = {-1f, 0f, 1f};
+		// float Hone[]  = {1f, 2f, 1f};
 
 		//convolve the image using the separable convolution routine
 		//with one separable Sobel filter at a time
@@ -110,56 +115,29 @@ public class Gradient_Magnitude implements PlugInFilter {
 		convolve(ipCopy, J, Hone, false, w, h);
 		convolve(ipCopy, J, Hzero, true, w, h);
 
-		// Compute E(u, v), the gradient magnitude see book p.122
+		computeEdgeStrength(I, J, ipCopy, w, h);
+
+		new ImagePlus("this is ipCopy", ipCopy).show();
+	}//end run()
+
+	/*
+	* Compute E(u, v), the gradient magnitude see book p.122
+	*/
+	public void computeEdgeStrength(ImageProcessor ip1, ImageProcessor ip2, ImageProcessor ipResult, int w, int h) {
 		for (int v = 0; v < h; v++) {
          	for (int u = 0; u < w; u++) {
-         		double DxSqred = I.getPixel(u, v) * I.getPixel(u, v);
-         		double DySqred = J.getPixel(u, v) * J.getPixel(u, v);
+         		double DxSqred = ip1.getPixel(u, v) * ip1.getPixel(u, v);
+         		double DySqred = ip2.getPixel(u, v) * ip2.getPixel(u, v);
          		int Euv = (int) Math.sqrt(DxSqred + DySqred);
          		if (Euv > 255) {
          			//System.out.println("out of bounds: " + Euv + ", clamping Euv to 255");
          			Euv = 255;
          		}
-	
-         		ipCopy.set(u, v, Euv);
+
+         		ipResult.set(u, v, Euv);
             }
         }
+	}
 
-		new ImagePlus("this is ipCopy", ipCopy).show();
-
-		//************************************************
-
-		// Using a Convolver object
-		// float HSx[] = {-1, 0, 1,
-		// 			   -2, 0, 2,
-		// 			   -1, 0, 1};
-
-		// float HSy[] = {-1, -2, -1,
-		// 			    0, 0, 0,
-		// 			    1, 2, 1};
-
-		// Convolver cv = new Convolver();
-		// cv.convolve(I, HSx, 3, 3);
-		// cv.convolve(J, HSy, 3, 3);
-
-		// int w = ip.getWidth();
-		// int h = ip.getHeight();
-	
-  //       for (int v = 0; v < h; v++) {
-  //        	for (int u = 0; u < w; u++) {
-  //        		double DxSqred = I.getPixel(u, v) * I.getPixel(u, v);
-  //        		double DySqred = J.getPixel(u, v) * J.getPixel(u, v);
-  //        		int Euv = (int) Math.sqrt(DxSqred + DySqred);
-  //        		if (Euv > 255) {
-  //        			System.out.println("out of bounds: " + Euv + ", clamping Euv to 255");
-  //        			Euv = 255;
-  //        		}
-	
-  //        		ipCopy.set(u, v, Euv);
-  //           }
-  //       }
-
-		// new ImagePlus("this is ipCopy", ipCopy).show();
-
-	}//end run()
 }
+

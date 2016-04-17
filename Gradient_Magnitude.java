@@ -9,10 +9,6 @@ import ij.process.ImageConverter;
  * Name: Norberto Luna-Cano
  * Email: nlunacano@wpi.edu
  * Date: 4/13/16
- * Overview Description of Plugin:
- * 
- * 
- * 
  */
 
 /**

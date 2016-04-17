@@ -9,20 +9,11 @@ import ij.process.ImageConverter;
  * Email: nlunacano@wpi.edu
  * Date: 4/13/16
  * Overview Description of Plugin:
- * 
- * 
- * 
  */
 
 /**
- * Instructions: Use this plugin filter as a template for your plugin implementations.
- * Specifically for the run method, replace the description with your own deetailed 
- * description of the implementation of the algorithm you are implementing. 
- * You may include assumptions being made, the algorithms being used, any special 
- * variables referenced, etc.
- * 
- * If you class makes use of any predefined variable members, please name them
- * appropriately and provide a short description comment on how it is used or
+ * this class computes the Laplacian of an image. I makes use of
+ * the separable convolution routine defined in Gradient_Magnitude.java
  * modified and the implications of modifying the variable.
  */
 public class Laplacian_Image implements PlugInFilter {

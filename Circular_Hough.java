@@ -2,7 +2,7 @@ import ij.*;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.*;
 import java.util.*;
-import ij.gui.*;
+
 
 /**
  * CS/ECE545 - WPI, Spring 2016
@@ -11,13 +11,16 @@ import ij.gui.*;
  * Date: April 13, 2016
  * Overview Description of Plugin:
  * For coins.png set radius bet 25 - 30
- * For eyes1 it finds right pupil with radius bet 7  - 8, left pupil bet 3 - 5 but separate runs and only 1 circle
- * Best radius range for the coins image is between 25 and 30. This was the image I tested on.
+ * 
+ * Best radius range for the coins image is between 25 and 30, numCircles = 10
+ * This was the image I tested on.
  */
 
 /**
  * This class implements the Hough Transform for finding circles with varying radii.
- * 
+ * It constructs a 3 dimensional accumulator array to store Hough values, and makes use 
+ * of inner class Circle, and an implementation of a fast Bresenham algorithm for 
+ * drawing circles.
  */
 public class Circular_Hough implements PlugInFilter {
     protected ImagePlus image;
@@ -127,7 +130,7 @@ public class Circular_Hough implements PlugInFilter {
         //preprocess a copy
         ImageConverter copy = new ImageConverter(imageCopy);
         copy.convertToGray8();
-        ip = imageCopy.getProcessor();
+        ip = imageCopy.getProcessor();//ip now gets an 8-bit grayscale copy  
 
         int width = ip2.getWidth();
         int height = ip2.getHeight();
@@ -242,7 +245,7 @@ public class Circular_Hough implements PlugInFilter {
             int y = circle.getY();
             int r = circle.getRadius();
 
-            plotCircle(x, y, r, ip);//plot white circles on original 8-bit image
+            plotCircle(x, y, r, ip);//plot white circles on 8-bit image copy of original
 
         }
 

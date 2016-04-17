@@ -2,7 +2,6 @@ import ij.*;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.*;
 import java.util.*;
-import ij.gui.*;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
@@ -16,7 +15,8 @@ import ij.gui.*;
 
 /**
  * Note, for simplicity, not for design, most code is duplicated from Circular_Hough.java 
- * as permitted in the problem specification. 
+ * as permitted in the problem specification. Image tested was coins.png with parameters:
+ * numCircles, minRad, maxRad as set below.
  */
 public class Circle_Flood implements PlugInFilter {
 	protected ImagePlus image;

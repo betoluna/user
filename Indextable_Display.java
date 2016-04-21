@@ -1,6 +1,10 @@
+import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.filter.PlugInFilter;
-import ij.process.ImageProcessor;
+import ij.process.*;
+
+import ij.WindowManager;
+import java.awt.image.IndexColorModel;
 
 /**
  * CS/ECE545 - WPI, Spring 2016
@@ -40,20 +44,9 @@ public class Indextable_Display implements PlugInFilter {
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
 		/*
-		 * The current return value accepts all gray-scale
-		 * images. If it needs to process indexed
-		 * images, setup() should return DOES_8C (8-bit color) see p.248
-		 *
-		 * It could also be DOES_ALL; you can add "| NO_CHANGES"
-		 * to indicate that the current image will not be
-		 * changed by this plugin.
-		 *
-		 * Beware of DOES_STACKS: this will call the run()
-		 * method with all slices of the current image
-		 * (channels, z-slices and frames, all). Most likely
-		 * not what you want.
+		 * 
 		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_8G + DOES_8C;
 	}
 
 	/**
@@ -65,6 +58,53 @@ public class Indextable_Display implements PlugInFilter {
 	 */
 	@Override
 	public void run(ImageProcessor ip) {
+		IndexColorModel icm = (IndexColorModel) ip.getColorModel(); 
+		//IJ.write("Color Model=" + ip.getColorModel() + " " + ip.isColorLut());
+	
+		int pixBits = icm.getPixelSize(); 
+		int mapSize = icm.getMapSize(); 
 		
+		//retrieve the current lookup tables (maps) for R,G,B
+		byte[] Rmap = new byte[mapSize]; icm.getReds(Rmap);  
+		byte[] Gmap = new byte[mapSize]; icm.getGreens(Gmap);  
+		byte[] Bmap = new byte[mapSize]; icm.getBlues(Bmap);  
+		
+
+		int w = 640; int h = 480;
+		ColorProcessor cip = new ColorProcessor(w, h);
+		//modify the lookup tables	
+		//for (int idx = 0; idx < mapSize; idx++) {
+		for (int idx = 200; idx < 203; idx++) {  
+			int r = 0xff & Rmap[idx];//mask to treat as unsigned byte 
+			IJ.log("> Rmap[idx]: " + Rmap[idx]);
+			IJ.log("> r: " + r);
+			
+			int g = 0xff & Gmap[idx];
+			int b = 0xff & Bmap[idx];   
+			// Rmap[idx] = (byte) Math.min(r + 30, 255); 
+			// Gmap[idx] = (byte) Math.min(g + 30, 255);
+			// Bmap[idx] = (byte) Math.min(b + 30, 255); 
+			int c = ((r & 0xff) << 16) | ((g & 0xff) << 8) | b & 0xff;
+
+			for (int v = 0; v < h; v++) {
+     			for (int u = 0; u < w; u++) {
+					cip.putPixel(u, v, c);
+				}
+			}
+			ImagePlus cimg = new ImagePlus("My New Color Image: " + idx, cip); 
+			cimg.show();
+		}
+		//create a new color model and apply to the image
+		// IndexColorModel icm2 = new IndexColorModel(pixBits, mapSize, Rmap, Gmap,Bmap);  
+		// ip.setColorModel(icm2);
+		// WindowManager.getCurrentImage().updateAndDraw();
+
+		
+		// ImagePlus cimg = new ImagePlus("My New Color Image", cip); 
+		// cimg.show();
+
+
 	}
+
+
 }

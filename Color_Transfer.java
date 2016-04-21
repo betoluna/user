@@ -9,7 +9,7 @@ import ij.process.ImageProcessor;
  * Date: May 1st. 2016
  * Overview Description of Plugin:
  * 
- * 
+ * IJ.log("> ");
  * 
  */
 
@@ -39,20 +39,9 @@ public class Color_Transfer implements PlugInFilter {
 	public int setup(String arg, ImagePlus image) {
 		this.image = image;
 		/*
-		 * The current return value accepts all gray-scale
-		 * images (if you access the pixels with ip.getf(x, y)
-		 * anyway, that works quite well.
-		 *
-		 * It could also be DOES_ALL; you can add "| NO_CHANGES"
-		 * to indicate that the current image will not be
-		 * changed by this plugin.
-		 *
-		 * Beware of DOES_STACKS: this will call the run()
-		 * method with all slices of the current image
-		 * (channels, z-slices and frames, all). Most likely
-		 * not what you want.
+		 * 
 		 */
-		return DOES_8G | DOES_16 | DOES_32;
+		return DOES_8G + DOES_8C;
 	}
 
 	/**

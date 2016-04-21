@@ -1,14 +1,19 @@
+import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.plugin.filter.PlugInFilter;
 import ij.process.ImageProcessor;
 import java.awt.image.IndexColorModel;
 
+/**
+ * IJ.log("> ");
+ *
+ */
 public class Brighten_Index_Image implements PlugInFilter {
 
 	@Override
 	public void run(ImageProcessor ip) {
-		IndexColorModel icm = (IndexColorModel) ip.getColorModel(); //ip.getDefaultColorModel();//
+		IndexColorModel icm = (IndexColorModel) ip.getColorModel(); 
 		//IJ.write("Color Model=" + ip.getColorModel() + " " + ip.isColorLut());
 	
 		int pixBits = icm.getPixelSize(); 

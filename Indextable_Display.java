@@ -13,7 +13,7 @@ import java.awt.image.IndexColorModel;
  * Date: May 1st. 2016
  * Overview Description of Plugin:
  * 
- * 
+ * IJ.log("> ");
  * 
  */
 
@@ -70,21 +70,27 @@ public class Indextable_Display implements PlugInFilter {
 		byte[] Bmap = new byte[mapSize]; icm.getBlues(Bmap);  
 		
 
-		int w = 640; int h = 480;
+		int w = 256; int h = 256; int offset = 0; int rise = 16; int run = 16; int step = 0; int yStep = 0;
 		ColorProcessor cip = new ColorProcessor(w, h);
 		//modify the lookup tables	
 		//for (int idx = 0; idx < mapSize; idx++) {
-		for (int idx = 200; idx < 203; idx++) {  
+		for (int idx = 0; idx < 100; idx = idx + 10) {  
 			int r = 0xff & Rmap[idx];//mask to treat as unsigned byte 
-			IJ.log("> Rmap[idx]: " + Rmap[idx]);
-			IJ.log("> r: " + r);
-			
 			int g = 0xff & Gmap[idx];
 			int b = 0xff & Bmap[idx];   
 			// Rmap[idx] = (byte) Math.min(r + 30, 255); 
 			// Gmap[idx] = (byte) Math.min(g + 30, 255);
-			// Bmap[idx] = (byte) Math.min(b + 30, 255); 
+			// Bmap[idx] = (byte) Math.min(b + 30, 255);
+
+			IJ.log("> Rmap[idx]: " + Rmap[idx]);
+			IJ.log("> r: " + r); 
 			int c = ((r & 0xff) << 16) | ((g & 0xff) << 8) | b & 0xff;
+
+			int origin = 1 + run * step++;
+			int xEnd = step * run;
+		
+			int yEnd = step * rise; 
+
 
 			for (int v = 0; v < h; v++) {
      			for (int u = 0; u < w; u++) {
@@ -94,17 +100,18 @@ public class Indextable_Display implements PlugInFilter {
 			ImagePlus cimg = new ImagePlus("My New Color Image: " + idx, cip); 
 			cimg.show();
 		}
-		//create a new color model and apply to the image
-		// IndexColorModel icm2 = new IndexColorModel(pixBits, mapSize, Rmap, Gmap,Bmap);  
-		// ip.setColorModel(icm2);
-		// WindowManager.getCurrentImage().updateAndDraw();
-
 		
-		// ImagePlus cimg = new ImagePlus("My New Color Image", cip); 
-		// cimg.show();
-
 
 	}
+
+	// public void paint(int orig, int rise, int run, int color) {
+
+	// 	for (int v = orig; v < rise; v++) {
+ //     		for (int u = orig; u < run; u++) {
+	// 			cip.putPixel(u, v, color);
+	// 		}
+	// 	}
+	// }
 
 
 }

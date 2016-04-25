@@ -31,12 +31,11 @@ import java.awt.image.IndexColorModel;
  */
 public class Indextable_Display implements PlugInFilter {
 	protected ImagePlus image;
-	int rectWidth = 16;
-	int rectHeight = 16;
-	int step = 16;
-	int max = 256;
-	int gridWidth = 16; 
-	int gridHeight = 16;
+	int rectWidth = 32;
+	int rectHeight = 24;
+	int numOfRectangles = 16;
+	int xmax = numOfRectangles * rectWidth;
+	int ymax = numOfRectangles * rectHeight;
 
 	/**
 	 * This method gets called by ImageJ / Fiji to determine
@@ -76,44 +75,44 @@ public class Indextable_Display implements PlugInFilter {
 		byte[] Bmap = new byte[mapSize]; icm.getBlues(Bmap);  
 		
 
-		int w = 280; int h = 280; 
+		int w = 512; int h = 384; 
 		ColorProcessor cip = new ColorProcessor(w, h);
 		String[] coord = new String[256];
 
 		//fill an array of origin coordinates, one for each color (256)
 		int index = 0; int u = 0;
-        for (int y = 0; y < max; y = y + step) {
-            for (int x = 0; x < max; x = x + step) {
-                coord[index++] = u++ * step + "," + y;
+        for (int y = 0; y < ymax; y = y + rectHeight) {
+            for (int x = 0; x < xmax; x = x + rectWidth) {
+                coord[index++] = u++ * rectWidth + "," + y;
             }
             u = 0;
         }
 
+        for (int i = 0; i < coord.length; i++) {
+        	IJ.log("> " + coord[i]); 
+        }
+        
+
 		//modify the lookup tables	
-		//for (int idx = 0; idx < mapSize; idx++) {
-		for (int idx = 0; idx < 100; idx = idx + 10) {  
+		for (int idx = 0; idx < mapSize; idx++) {
+		//for (int idx = 0; idx < 100; idx = idx + 10) {  
 			int r = 0xff & Rmap[idx];//mask to treat as unsigned byte 
 			int g = 0xff & Gmap[idx];
 			int b = 0xff & Bmap[idx];   
 
-			IJ.log("> Rmap[idx]: " + Rmap[idx]);
-			IJ.log("> r: " + r); 
+			// IJ.log("> Rmap[idx]: " + Rmap[idx]);
+			// IJ.log("> r: " + r); 
 			int c = ((r & 0xff) << 16) | ((g & 0xff) << 8) | b & 0xff;
 
 
-			String[] coordinate = new String[2];
-            coordinate = coord[idx].split(",");
-			int x = Integer.parseInt(coordinate[0]);
-            int y = Integer.parseInt(coordinate[1]);
+			String[] XY = new String[2];
+            XY = coord[idx].split(",");
+			int x = Integer.parseInt(XY[0]);
+            int y = Integer.parseInt(XY[1]);
+            IJ.log("> x: " + x + ", y: " + y); 
+            
 			paintRectangle(x, y, c, cip);
 
-			// for (int v = 0; v < h; v++) {
-   //   			for (int u = 0; u < w; u++) {
-			// 		cip.putPixel(u, v, c);
-			// 	}
-			// }
-			// ImagePlus cimg = new ImagePlus("My New Color Image: " + idx, cip); 
-			// cimg.show();
 		}
 		
 		ImagePlus cimg = new ImagePlus("My New Color Image", cip); 
@@ -121,11 +120,11 @@ public class Indextable_Display implements PlugInFilter {
 	}
 
 	public void paintRectangle(int x, int y, int color, ColorProcessor cip) {
-		int xBoundary = x + rectWidth;
-		int yBoundary = y + rectHeight;
+		int xMax = x + rectWidth;
+		int yMax = y + rectHeight;
 
-		for (int v = y; v < yBoundary; v++) {
-     		for (int u = x; u < xBoundary; u++) {
+		for (int v = y; v < yMax; v++) {
+     		for (int u = x; u < xMax; u++) {
 				cip.putPixel(u, v, color);
 			}
 		}
